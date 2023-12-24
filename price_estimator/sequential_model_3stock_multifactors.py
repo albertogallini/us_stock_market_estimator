@@ -136,7 +136,9 @@ earlystop = EarlyStopping(monitor='val_loss',  # Quantity to be monitored.
 
 def evaluate_ticker(input_file:str, calibrate: bool, scenario_id: int, model_date: str):
     print("Calibrate SequentialModel1StockMultiFactor Model ...")
-    sm3s = SequentialModel3StockMultiFactor(input_data_price_csv=input_file,input_data_rates_csv=FOLDER_MARKET_DATA+"/usd_rates.csv") 
+    sm3s = SequentialModel3StockMultiFactor(input_data_price_csv = input_file,
+                                            input_data_rates_csv = FOLDER_MARKET_DATA+"/usd_rates.csv",
+                                            input_fear_and_greed_csv = FOLDER_MARKET_DATA+"/fear_and_greed.csv") 
     
     if calibrate:
         sm3s.calibrate_model()
@@ -208,7 +210,10 @@ def evaluate_ticker_distribution(input_file:str, scenarios: int = 10, calibrate 
     
     
 def check_data_correlation(input_file:str):
-    sm1s = SequentialModel3StockMultiFactor(input_data_price_csv=input_file,input_data_rates_csv="/Volumes/data/usd_rates.csv") 
+    sm1s = SequentialModel3StockMultiFactor(input_data_price_csv = input_file,
+                                            input_data_rates_csv = FOLDER_MARKET_DATA+"/usd_rates.csv",
+                                            input_fear_and_greed_csv = FOLDER_MARKET_DATA+"/fear_and_greed.csv") 
+    
     print (sm1s.df_not_normalized[['Close']].describe())
 
     sm1s.df_not_normalized.plot(kind="scatter",  x="Close", y='3 Mo', color = "green")
@@ -230,7 +235,7 @@ def check_data_correlation(input_file:str):
         
         
 def main():
-    init_config("/Volumes/price_estimator/config.json")
+    init_config("/Volumes/us_stock_market_estimator/price_estimator/config.json")
     print("Running in one ticker mode")
     print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
     #check_data_correlation("/Users/albertogallini/projects/Market Price Fetcher/market_price_fetcher/data/price_fetcher_MSFT.csv")
