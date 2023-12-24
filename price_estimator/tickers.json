@@ -1,0 +1,50 @@
+[
+    {
+        "stocks": ["IONQ","UFPT","NVTS"],
+        "id": "1"
+    },
+    {
+        "stocks": ["META","PFIE","GOOGL"],
+        "id": "2"
+    },
+    {
+        "stocks": ["WM","HEI","DDOG"],
+        "id": "3"
+    },
+    {
+        "stocks": ["UPST","CFLT","DT"],
+        "id": "4"
+    },
+    {
+        "stocks": ["AEHR","NEP","MSFT"],
+        "id": "5"
+    },
+    {
+        "stocks": ["GTLB","WAT","IONQ"],
+        "id": "6"
+    },
+    {
+        "stocks": ["BOOM","CTS","MATW"],
+        "id": "7"
+    },
+    {
+        "stocks": ["AAL", "WHD","CPSI"],
+        "id": "8"
+    },
+    {
+        "stocks": ["JPM","SOFI"],
+        "id": "9"
+    },
+    {
+        "stocks": ["NEE","NVDA"],
+        "id": "10"
+    },
+    {
+        "stocks": ["ABNB","PTEN"],
+        "id": "11"
+    },
+    {
+        "stocks": ["UFPT","WU"],
+        "id": "12"
+    }
+]
