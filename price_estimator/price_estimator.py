@@ -101,7 +101,9 @@ def produce_distribution_pdf_from_file(input_data_dir: str):
         plt.close(fig)
                 
     # Close the pdf
-    pdf_pages.close(
+    pdf_pages.close()
+
+    
 def produce_estimate_price_distributions(ticker_list : list , input_data_dir: str, scenarios: int = 10, file_name_id: str ="", save_calibration : bool = False,  calibration_folder : str = None ):
     print(os.environ['PYTHONPATH'])
     num_chart = len(ticker_list)

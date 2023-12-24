@@ -1,0 +1,7 @@
+dask==2023.5.0
+matplotlib==3.7.4
+numpy==1.24.3
+pandas==2.0.3
+scipy==1.11.4
+tensorflow==2.13.0
+tensorflow_intel==2.13.0

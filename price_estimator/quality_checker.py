@@ -171,7 +171,7 @@ class QualityChecker(object):
         
         
 if __name__ == '__main__':
-    init_config("config.json")
+    init_config("price_estimator/config.json")
     logger = logging.getLogger('quality_checker.logger')
     file_handler = logging.FileHandler('quality_checker.log')
     logger.addHandler(file_handler)
