@@ -316,7 +316,7 @@ def check_data_correlation(input_file:str):
         
         
 def main():
-    init_config("/Volumes/us_stock_market_estimator/price_estimator/config.json")
+    init_config()
     print("Running in one ticker mode")
     print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
     #check_data_correlation("/Volumes/data/price_fetcher_PYPL.csv")

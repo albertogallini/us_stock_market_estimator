@@ -7,7 +7,7 @@ FOLDER_MARKET_DATA              = "/Volumes/data/"
 FOLDER_REPORD_PDF               = "/Volumes/reports/"
 
 
-def init_config(cfg_file: str):
+def init_config(cfg_file: str = "price_estimator/config.json" ):
     import json
     with open(cfg_file) as f:
         config  = json.load(f)

@@ -18,7 +18,7 @@ import re
 import logging
 import os
 
-from  const_and_utils import get_ticker
+from  const_and_utils import *
 
 
 
@@ -294,6 +294,7 @@ def evaluate_ticker_distribution(input_file:str, scenarios: int = 10 ):
 def main():
 
     print("Running in oneticker mode")
+    init_config()
     evaluate_ticker_distribution("/Users/albertogallini/projects/Market Price Fetcher/market_price_fetcher/data/price_fetcher_IONS.csv", 10)
    
     

@@ -114,7 +114,7 @@ def back_test(args: tuple):
 import sys
 
 def main():
-    init_config("/Volumes/us_stock_market_estimator/price_estimator/config.json")
+    init_config()
     from multiprocessing import Pool
     file_name = "/Volumes/data/price_fetcher_META.csv"
     print("Processing " + file_name)
