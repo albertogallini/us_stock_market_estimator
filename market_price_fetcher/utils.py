@@ -5,7 +5,7 @@ Created on Dec 1, 2023
 '''
 
 
-import const_and_utils
+from price_estimator.const_and_utils import FOLDER_MARKET_DATA
 
 def remove_duplicate_dates(input_file_name):
     import pandas as pd
@@ -25,13 +25,12 @@ def remove_duplicate_dates(input_file_name):
     
 if __name__ == '__main__':
     import os
-    #remove_duplicate_dates(PriceEstimator.const_and_utils.FOLDER_MARKET_DATA+"price_fetcher_A.csv")
     
-    files = os.listdir(const_and_utils.FOLDER_MARKET_DATA)
+    files = os.listdir(FOLDER_MARKET_DATA)
     for f in files:
         if f.endswith(".csv") and not f.endswith("rates.csv"): 
             try:
-                remove_duplicate_dates(const_and_utils.FOLDER_MARKET_DATA+f)
+                remove_duplicate_dates(FOLDER_MARKET_DATA+f)
             except Exception as e:
                 print(" remove_duplicate_dates - Caught an exception: ", e)
                 continue

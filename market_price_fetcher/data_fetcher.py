@@ -8,6 +8,8 @@ from  market_price_fetcher import fulldump,update,CustomTickerFetcher
 from  index_sector_fetcher import IndexSectorFetcher
 from  rates_fetcher import IRFetcherTreasury
 from  fear_and_greed_index import FearAndGreedIndex
+
+from price_estimator.const_and_utils import *
         
 if __name__ == '__main__':
     
@@ -53,14 +55,13 @@ if __name__ == '__main__':
         
         # this is a very bad way to remove duplicated as the update sometimes fails and I do not understand why.
         from  utils import remove_duplicate_dates
-        import const_and_utils
         import os
         
-        files = os.listdir(const_and_utils.FOLDER_MARKET_DATA)
+        files = os.listdir(FOLDER_MARKET_DATA)
         for f in files:
             if f.endswith(".csv") and not f.endswith("rates.csv"): 
                 try:
-                    remove_duplicate_dates(const_and_utils.FOLDER_MARKET_DATA+f)
+                    remove_duplicate_dates(FOLDER_MARKET_DATA+f)
                 except Exception as e:
                     print(" remove_duplicate_dates - Caught an exception: ", e)
                     continue
@@ -71,11 +72,11 @@ if __name__ == '__main__':
         irf = IRFetcherTreasury()
         usd_rates = irf.get_rates()
         logger.debug(usd_rates)
-        usd_rates.to_csv('/Volumes/data/usd_rates.csv')
+        usd_rates.to_csv(FOLDER_MARKET_DATA + FILE_NAME_RATES)
 
         fngi = FearAndGreedIndex(start='2020-09-30', end=today_str)
         fngdf = fngi.fetch()
-        fngdf.to_csv('/Volumes/data/fear_and_greed.csv')
+        fngdf.to_csv(FOLDER_MARKET_DATA + FILE_NAME_FNG)
         
         
        

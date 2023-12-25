@@ -58,7 +58,7 @@ class IRFetcherFredgraph():
         # Make sure the request was successful
         assert self.__response.status_code == 200
         # Write the contents of the response to a file
-        with open('usd_rates.csv', 'wb') as f:
+        with open(FILE_NAME_RATES, 'wb') as f:
             f.write(self.__response.content)
             
             
@@ -93,6 +93,8 @@ class IRFetcherTreasury:
 import unittest
 import logging  
 import pandas as pd
+
+from  price_estimator.const_and_utils import FOLDER_MARKET_DATA,FILE_NAME_RATES
    
 class TestIndexPrice(unittest.TestCase):
     
@@ -112,8 +114,8 @@ class TestIndexPrice(unittest.TestCase):
         usd_rates = irf.get_rates()
         logger.debug(usd_rates)
         
-        usd_rates.to_csv('/Volumes/data/usd_rates.csv')
-        df = pd.read_csv('/Volumes/data/usd_rates.csv')
+        usd_rates.to_csv(FOLDER_MARKET_DATA + FILE_NAME_RATES)
+        df = pd.read_csv(FOLDER_MARKET_DATA + FILE_NAME_RATES)
         self.assertEqual(df.empty,False)
         
 

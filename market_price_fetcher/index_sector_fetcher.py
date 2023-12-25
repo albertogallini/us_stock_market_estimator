@@ -19,6 +19,7 @@ Utilities    XLU
 '''
 
 from market_price_fetcher import YahooPriceFetcher
+from price_estimator.const_and_utils import *
 import pandas as pd
 
 
@@ -94,12 +95,12 @@ class IndexSectorFetcher(object):
         for ticker in self.__tickers["Ticker"]:
             ypf = YahooPriceFetcher(ticker)
             tickerDf = ypf.get_price(self.period, self.start,self.end)
-            tickerDf.to_csv("/Volumes/data/index_sector_"+ticker+".csv")
+            tickerDf.to_csv(FOLDER_MARKET_DATA+PREFIX_INDEX_SECTOR+ticker+".csv")
            
         for ticker in self.__subsector_tickers["Ticker"]:
             ypf = YahooPriceFetcher(ticker)
             tickerDf = ypf.get_price(self.period, self.start,self.end)
-            tickerDf.to_csv("/Volumes/data/index_sub_sector_"+ticker+".csv")
+            tickerDf.to_csv(FOLDER_MARKET_DATA+PREFIX_INDEX_SUB_SECTOR+ticker+".csv")
         
             
     
@@ -127,11 +128,11 @@ class TestIndexPrice(unittest.TestCase):
         isf.fetch()
         
         for ticker in isf.get_tickers():
-            df = pd.read_csv("/Volumes/data/index_sector_"+ticker+".csv")
+            df = pd.read_csv(FOLDER_MARKET_DATA+PREFIX_INDEX_SECTOR+ticker+".csv")
             self.assertEqual(df.empty,False)
         
         for ticker in isf.get_subsectors_tickers():
-            df = pd.read_csv("/Volumes/data/index_sub_sector_"+ticker+".csv")
+            df = pd.read_csv(FOLDER_MARKET_DATA+PREFIX_INDEX_SUB_SECTOR+ticker+".csv")
             self.assertEqual(df.empty,False)
         
 

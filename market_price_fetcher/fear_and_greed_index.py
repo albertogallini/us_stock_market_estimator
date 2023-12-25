@@ -28,7 +28,7 @@ class FearAndGreedIndex(object):
         data = r.json()
 
         
-        self.fng_data = pd.read_csv('fear-greed.csv', usecols=['Date', 'Fear Greed'])
+        self.fng_data = pd.read_csv('market_price_fetcher/fear-greed.csv', usecols=['Date', 'Fear Greed'])
         self.fng_data['Date'] = pd.to_datetime(self.fng_data['Date'], format='%Y-%m-%d')  
 
         self.fng_data.set_index('Date', inplace=True)
@@ -56,7 +56,8 @@ class FearAndGreedIndex(object):
 
 
 import unittest
-import logging  
+import logging 
+from  price_estimator.const_and_utils import FOLDER_MARKET_DATA,FILE_NAME_FNG
    
 class TestFearAndGreedIndex(unittest.TestCase):
     
@@ -72,7 +73,7 @@ class TestFearAndGreedIndex(unittest.TestCase):
         logger.info('Fetching USD index sectors ')
         fngi = FearAndGreedIndex(start='2020-09-30', end='2023-12-13')
         df = fngi.fetch()
-        df.to_csv('/Volumes/data/fear_and_greed.csv')
+        df.to_csv(FOLDER_MARKET_DATA + FILE_NAME_FNG)
         print(df)
         
         self.assertEqual(df.empty,False)

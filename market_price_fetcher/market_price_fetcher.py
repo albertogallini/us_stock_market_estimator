@@ -18,6 +18,7 @@ import time
 import pandas as pd
 import logging
 
+from price_estimator.const_and_utils import *
 
 
 
@@ -121,7 +122,7 @@ class BatchFetcher():
         logger.info("Fetching prices for " + ticker)
         ypf = YahooPriceFetcher(ticker)
         tickerDf = ypf.get_price(self.period, self.start,self.end)
-        tickerDf.to_csv("/Volumes/data/price_fetcher_"+ticker+".csv")
+        tickerDf.to_csv(FOLDER_MARKET_DATA + PREFIX_PRICE_FETCHER + ticker+".csv")
 
  
  
@@ -140,12 +141,12 @@ class BatchFetcherAppend():
         if (not tickerDf.empty):
             # Load existing data
             try:
-                df_existing = pd.read_csv("/Volumes/data/price_fetcher_"+ticker+".csv")
+                df_existing = pd.read_csv(FOLDER_MARKET_DATA + PREFIX_PRICE_FETCHER + ticker+".csv")
             except:
                 df_existing = pd.DataFrame()
                 
             if (not df_existing.empty):
-                logger.info("/Volumes/data/price_fetcher_"+ticker+".csv")
+                logger.info(FOLDER_MARKET_DATA + PREFIX_PRICE_FETCHER + ticker+".csv")
                 df_existing.set_index('Date', inplace=True)
                 
                 
@@ -157,7 +158,7 @@ class BatchFetcherAppend():
                 df_combined.set_index('Date', inplace=True)
                 logger.debug(df_combined.tail(30))
                 # Write back to csv
-                df_combined.to_csv("/Volumes/data/price_fetcher_"+ticker+".csv")
+                df_combined.to_csv(FOLDER_MARKET_DATA + PREFIX_PRICE_FETCHER +ticker+".csv")
       
   
 class CustomTickerFetcher(object):
@@ -256,3 +257,32 @@ def update(start_date: str, end_date: str , logger:logging.Logger):
     logger.info("Updating prices done.")
     
     
+import unittest
+import logging  
+import pandas as pd
+
+from  price_estimator.const_and_utils import FOLDER_MARKET_DATA,FILE_NAME_RATES
+   
+class TestPriceFetecher(unittest.TestCase):
+    
+    def test_ticker_update(self):
+     
+        print("Start...")
+        logger= logging.getLogger('market_price_fetcher.logger')
+        file_handler = logging.FileHandler('market_price_fetcher_test.log')
+        logger.addHandler(file_handler)
+        logger.setLevel(logging.INFO)
+
+        nyset =  NSYETickers()
+        nyse_tickers = nyset.fetch()
+        
+        for ticker in ["TDG", "TDI"]:
+            bf = BatchFetcherAppend (period = '1d', start='2023-12-22', end='2023-12-25')
+            bf.fetch(ticker = ticker, logger = logger)
+
+            df = pd.read_csv(FOLDER_MARKET_DATA + PREFIX_PRICE_FETCHER + ticker+".csv")
+            self.assertEqual(df.empty,False)
+        
+
+if __name__ == "__main__":
+    unittest.main()
