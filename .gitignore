@@ -1,0 +1,5 @@
+price_estimator/__pycache__
+market_price_fetcher/__pycache__
+scrapers/__pycache__
+multifactor_check.csv
+*.log
