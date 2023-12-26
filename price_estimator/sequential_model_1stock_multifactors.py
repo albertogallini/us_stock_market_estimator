@@ -205,6 +205,9 @@ class SequentialModel1StockMultiFactor(SequentialModel1StockAndRates):
         else:
             return next_biz_day_price[0],self.data[len(self.data)-1][0]
         
+    def get_num_forecasted_prices(self):
+        return 1
+        
    
                         
         
@@ -220,97 +223,111 @@ earlystop = EarlyStopping(monitor='val_loss',  # Quantity to be monitored.
                           mode='auto')  # Direction of improvement is inferred        
         
         
-   
-   
 
-def evaluate_ticker(input_file:str, calibrate: bool, scenario_id: int, model_date: str):
-    print("Calibrate SequentialModel1StockMultiFactor Model ...")
-    sm1s = SequentialModel1StockMultiFactor(input_data_price_csv = input_file,
-                                            input_data_rates_csv = FOLDER_MARKET_DATA+"/usd_rates.csv",
-                                            input_fear_and_greed_csv = FOLDER_MARKET_DATA+"/fear_and_greed.csv") 
+def evaluate_ticker(class_type, input_file:str, calibrate: bool, scenario_id: int, model_date: str):
+    print("Calibrate %s ...", class_type )
+    seq_model = create_instance_of_class(class_type,   
+                                         input_data_price_csv = input_file,
+                                         input_data_rates_csv = FOLDER_MARKET_DATA+"/usd_rates.csv",
+                                         input_fear_and_greed_csv = FOLDER_MARKET_DATA+"/fear_and_greed.csv") 
     
     if calibrate:
-        sm1s.calibrate_model()
+        seq_model.calibrate_model()
     else:
-        sm1s.load_model(path=FOLDER_REPORD_PDF+model_date+"/", scenario_id=str(scenario_id))
+        seq_model.load_model(path=FOLDER_REPORD_PDF+model_date+"/", scenario_id=str(scenario_id))
         
-    if (sm1s.model == None):
+    if (seq_model.model == None):
         return None, None
     ticker = get_ticker(input_file)
-    return ticker, sm1s 
+    return ticker, seq_model 
 
-        
-def evaluate_ticker_distribution(input_file:str, scenarios: int = 10, calibrate : bool = True, model_date: str = "15-12-2023"):
+def evaluate_ticker_distribution(class_type, input_file:str, scenarios: int = 10, calibrate : bool = True, model_date: str = "15-12-2023" ):
     from scipy.stats import norm,lognorm
-
-    fprices = list()
+    
+    fprices_ml = list()
     for i in range (0,scenarios):
-        ticker, sm1s = evaluate_ticker(input_file=input_file,calibrate=calibrate, scenario_id=i, model_date=model_date)
-        p,p_1 = sm1s.get_forecasted_price()
-        fprices.append(p[0])
+        ticker, seq_model = evaluate_ticker(class_type, input_file=input_file, calibrate=calibrate, scenario_id=i, model_date=model_date)
+        p_list,p_1 = seq_model.get_forecasted_price()
+        for i in p_list:
+            fprices_ml.append(p_list[0])
             
-    mu, std = norm.fit(fprices)
-    
-    plt.hist(fprices, bins=scenarios, density=True, alpha=0.6, color='g')
+    num_sub_plots = seq_model.get_num_forecasted_prices()
 
-    # Plot the PDF.
-    xmin, xmax = plt.xlim()
-    x = np.linspace(mu - std, mu + std, 100)
-    xx = np.linspace(mu - 3*std, mu + 3*std, 100)
-    p = norm.pdf(x, mu, std)
-    pp = norm.pdf(xx, mu, std)
-    plt.plot(x, p, 'k', linewidth=2)
-    plt.plot(xx, pp, 'k', linewidth=1, linestyle='dashed')
-    
-    pattern = r"_([^_]*)\."
-    ticker = re.findall(pattern, input_file)
-    
-    title = str(ticker[0]) + " - Fit results: mu = %.2f [%.2f,%.2f],  std = %.2f, prev price: %2f"  % (mu, mu - std, mu + std, std, p_1)
-    if (mu < p_1):
-        plt.title(title, color="red")
-    if (mu > p_1):
-        plt.title(title, color="green")
-    if (mu == p_1):
-        plt.title(title, color="black")
-        
-        
-    s, loc, scale = lognorm.fit(fprices, floc=0)
-    mean, var  = lognorm.stats(s, loc, scale, moments='mv')
-    std = np.sqrt(var)
-    pdf = lognorm.pdf(x, s, loc, scale)
-    plt.plot(x, pdf, label='log-normal distribution')
-    plt.axvline(mean, color='r', linestyle='--', label='Mean')
-    plt.axvline(mean - std, color='b', linestyle='--', label='Mean - STD')
-    plt.axvline(mean + std, color='b', linestyle='--', label='Mean + STD')
+
+    fig, axs = plt.subplots(num_sub_plots  if num_sub_plots > 1  else 2)
+
+    for i in range (0,num_sub_plots):
+
+        fprices = p_list
+        if (num_sub_plots > 1):
+            fprices = [a[i] for a in fprices_ml]
    
+        mu, std = norm.fit(fprices)
+        axs[i].hist(fprices, bins=scenarios, density=True, alpha=0.6, color='g')
+    
+        # Plot the PDF.
+        x = np.linspace(mu - std, mu + std, 100)
+        xx = np.linspace(mu - 3*std, mu + 3*std, 100)
+        p = norm.pdf(x, mu, std)
+        pp = norm.pdf(xx, mu, std)
+        axs[i].plot(x, p, 'k', linewidth=2)
+        axs[i].plot(xx, pp, 'k', linewidth=1, linestyle='dashed')
+        
+        pattern = r"_([^_]*)\."
+        ticker = re.findall(pattern, input_file)
+        
+        title = str(ticker[0]) + " - Fit results: mu = %.2f [%.2f,%.2f],  std = %.2f, prev price: %2f"  % (mu, mu - std, mu + std, std, p_1)
+        if (mu < p_1):
+            axs[i].set_title(title, color="red")
+        if (mu > p_1):
+            axs[i].set_title(title, color="green")
+        if (mu == p_1):
+            axs[i].set_title(title, color="black")
+            
+            
+        s, loc, scale = lognorm.fit(fprices, floc=0)
+        mean, var  = lognorm.stats(s, loc, scale, moments='mv')
+        std = np.sqrt(var)
+        pdf = lognorm.pdf(x, s, loc, scale)
+        axs[i].plot(x, pdf, label='log-normal distribution')
+        axs[i].axvline(mean, color='r', linestyle='--', label='Mean')
+        axs[i].axvline(mean - std, color='b', linestyle='--', label='Mean - STD')
+        axs[i].axvline(mean + std, color='b', linestyle='--', label='Mean + STD')
+       
+    plt.tight_layout()   
     plt.show()
 
     # Print the 3 sigma
-    print("3 sigma: ", 3*std)    
+    print("3 sigma: ", 3*std)        
     
     
     
-def check_data_correlation(input_file:str):
+def check_data_correlation(input_file:str, rates = True, indexes = False, fng = True):
     sm1s = SequentialModel1StockMultiFactor(input_data_price_csv = input_file,
-                                            input_data_rates_csv = FOLDER_MARKET_DATA+"/usd_rates.csv",
-                                            input_fear_and_greed_csv = FOLDER_MARKET_DATA+"/fear_and_greed.csv") 
+                                            input_data_rates_csv = FOLDER_MARKET_DATA+FILE_NAME_RATES,
+                                            input_fear_and_greed_csv = FOLDER_MARKET_DATA+FILE_NAME_FNG) 
     
     print (sm1s.df_not_normalized[['Close']].describe())
 
-    sm1s.df_not_normalized.plot(kind="scatter",  x="Close", y='3 Mo', color = "green")
-    sm1s.df_not_normalized.plot(kind="scatter",  x="Close", y='4 Mo', color = "blue")
-    sm1s.df_not_normalized.plot(kind="scatter",  x="Close", y='6 Mo', color = "green")
-    sm1s.df_not_normalized.plot(kind="scatter",  x="Close", y='1 Yr', color = "red")
-    sm1s.df_not_normalized.plot(kind="scatter",  x="Close", y='2 Yr', color = "red")
-    sm1s.df_not_normalized.plot(kind="scatter",  x="Close", y='5 Yr', color = "red")
-    sm1s.df_not_normalized.plot(kind="scatter",  x="Close", y='7 Yr', color = "red")
-    sm1s.df_not_normalized.plot(kind="scatter",  x="Close", y='10 Yr', color = "red")
-    
-    for t in ['IYK', 'ITA', 'RTH', 'XRT', 'XHB', 'XLY', 'IBD', 'XRT', 'VDC', 'IYC', 'IYC', 'VDE', 'XOP', 'XLE', 'VCR', 'XES', 'KBE', 'IHF',
+
+    if (rates):
+        sm1s.df_not_normalized.plot(kind="scatter",  x="Close", y='3 Mo', color = "green")
+        sm1s.df_not_normalized.plot(kind="scatter",  x="Close", y='4 Mo', color = "blue")
+        sm1s.df_not_normalized.plot(kind="scatter",  x="Close", y='6 Mo', color = "green")
+        sm1s.df_not_normalized.plot(kind="scatter",  x="Close", y='1 Yr', color = "red")
+        sm1s.df_not_normalized.plot(kind="scatter",  x="Close", y='2 Yr', color = "red")
+        sm1s.df_not_normalized.plot(kind="scatter",  x="Close", y='5 Yr', color = "red")
+        sm1s.df_not_normalized.plot(kind="scatter",  x="Close", y='7 Yr', color = "red")
+        sm1s.df_not_normalized.plot(kind="scatter",  x="Close", y='10 Yr', color = "red")
+
+    if(indexes):
+        for t in ['IYK', 'ITA', 'RTH', 'XRT', 'XHB', 'XLY', 'IBD', 'XRT', 'VDC', 'IYC', 'IYC', 'VDE', 'XOP', 'XLE', 'VCR', 'XES', 'KBE', 'IHF',
                         'IYF', 'KRE', 'IBB', 'XLV', 'XPH', 'XLP', 'XLB', 'USD', 'IYJ', 'XLI', 'IYT', 'IGV', 'IYW', 'XLB', 'XME', 'IP', 'IYR', 'IYR', 'IYT', 
                         'ITB', 'IYR', 'IVV', 'IYZ', 'XLU', 'XLU', 'IDU'] :
-        
-        sm1s.df_not_normalized.plot(kind="scatter",  x="Close", y="['"+t+"']", color = "red")
+            sm1s.df_not_normalized.plot(kind="scatter",  x="Close", y="['"+t+"']", color = "red")
+    
+    if(fng):
+       sm1s.df_not_normalized.plot(kind="scatter",  x="Close", y='Fear Greed', color = "red")
         
     plt.show()
         
@@ -319,8 +336,8 @@ def main():
     init_config()
     print("Running in one ticker mode")
     print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
-    #check_data_correlation("/Volumes/data/price_fetcher_PYPL.csv")
-    evaluate_ticker_distribution(FOLDER_MARKET_DATA + "price_fetcher_META.csv", 10, calibrate = True, model_date= None)
+    check_data_correlation("/Volumes/data/price_fetcher_PYPL.csv")
+    evaluate_ticker_distribution(SequentialModel1StockMultiFactor, FOLDER_MARKET_DATA + "price_fetcher_META.csv", 3, calibrate = True, model_date= None)
    
     
 if __name__ == '__main__':  

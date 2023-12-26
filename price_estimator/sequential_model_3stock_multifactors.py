@@ -115,6 +115,8 @@ class SequentialModel3StockMultiFactor(SequentialModel1StockMultiFactor):
         else:
             return next_biz_day_price,self.data[len(self.data)-1]
         
+    def get_num_forecasted_prices(self):
+        return self._SequentialModel3StockMultiFactor__OUTPUT_SERIES_NUMBER
         
    
                         
@@ -149,98 +151,18 @@ def evaluate_ticker(input_file:str, calibrate: bool, scenario_id: int, model_dat
         return None, None
     ticker = get_ticker(input_file)
     return ticker, sm3s 
+    
+    
 
-        
-def evaluate_ticker_distribution(input_file:str, scenarios: int = 10, calibrate : bool = True, model_date: str = "15-12-2023" ):
-    from scipy.stats import norm,lognorm
-
-    
-    fprices_ml = list()
-    for i in range (0,scenarios):
-        ticker, sm3s = evaluate_ticker(input_file=input_file,calibrate=calibrate, scenario_id=i, model_date=model_date)
-        p_list,p_1 = sm3s.get_forecasted_price()
-        for i in p_list:
-            fprices_ml.append(p_list[0])
-            
-            
-    fig, axs = plt.subplots(sm3s._SequentialModel3StockMultiFactor__OUTPUT_SERIES_NUMBER)
-    for i in range (0,len(fprices_ml[0])):
-        fprices = [a[i] for a in fprices_ml]
-        mu, std = norm.fit(fprices)
-        
-        
-        
-        axs[i].hist(fprices, bins=scenarios, density=True, alpha=0.6, color='g')
-    
-        # Plot the PDF.
-        x = np.linspace(mu - std, mu + std, 100)
-        xx = np.linspace(mu - 3*std, mu + 3*std, 100)
-        p = norm.pdf(x, mu, std)
-        pp = norm.pdf(xx, mu, std)
-        axs[i].plot(x, p, 'k', linewidth=2)
-        axs[i].plot(xx, pp, 'k', linewidth=1, linestyle='dashed')
-        
-        pattern = r"_([^_]*)\."
-        ticker = re.findall(pattern, input_file)
-        
-        title = str(ticker[0]) + " - Fit results: mu = %.2f [%.2f,%.2f],  std = %.2f, prev price: %2f"  % (mu, mu - std, mu + std, std, p_1)
-        if (mu < p_1):
-            axs[i].set_title(title, color="red")
-        if (mu > p_1):
-            axs[i].set_title(title, color="green")
-        if (mu == p_1):
-            axs[i].set_title(title, color="black")
-            
-            
-        s, loc, scale = lognorm.fit(fprices, floc=0)
-        mean, var  = lognorm.stats(s, loc, scale, moments='mv')
-        std = np.sqrt(var)
-        pdf = lognorm.pdf(x, s, loc, scale)
-        axs[i].plot(x, pdf, label='log-normal distribution')
-        axs[i].axvline(mean, color='r', linestyle='--', label='Mean')
-        axs[i].axvline(mean - std, color='b', linestyle='--', label='Mean - STD')
-        axs[i].axvline(mean + std, color='b', linestyle='--', label='Mean + STD')
-       
-    plt.tight_layout()   
-    plt.show()
-
-    # Print the 3 sigma
-    print("3 sigma: ", 3*std)    
-    
-    
-    
-def check_data_correlation(input_file:str):
-    sm1s = SequentialModel3StockMultiFactor(input_data_price_csv = input_file,
-                                            input_data_rates_csv = FOLDER_MARKET_DATA+"/usd_rates.csv",
-                                            input_fear_and_greed_csv = FOLDER_MARKET_DATA+"/fear_and_greed.csv") 
-    
-    print (sm1s.df_not_normalized[['Close']].describe())
-
-    sm1s.df_not_normalized.plot(kind="scatter",  x="Close", y='3 Mo', color = "green")
-    sm1s.df_not_normalized.plot(kind="scatter",  x="Close", y='4 Mo', color = "blue")
-    sm1s.df_not_normalized.plot(kind="scatter",  x="Close", y='6 Mo', color = "green")
-    sm1s.df_not_normalized.plot(kind="scatter",  x="Close", y='1 Yr', color = "red")
-    sm1s.df_not_normalized.plot(kind="scatter",  x="Close", y='2 Yr', color = "red")
-    sm1s.df_not_normalized.plot(kind="scatter",  x="Close", y='5 Yr', color = "red")
-    sm1s.df_not_normalized.plot(kind="scatter",  x="Close", y='7 Yr', color = "red")
-    sm1s.df_not_normalized.plot(kind="scatter",  x="Close", y='10 Yr', color = "red")
-    
-    for t in ['IYK', 'ITA', 'RTH', 'XRT', 'XHB', 'XLY', 'IBD', 'XRT', 'VDC', 'IYC', 'IYC', 'VDE', 'XOP', 'XLE', 'VCR', 'XES', 'KBE', 'IHF',
-                        'IYF', 'KRE', 'IBB', 'XLV', 'XPH', 'XLP', 'XLB', 'USD', 'IYJ', 'XLI', 'IYT', 'IGV', 'IYW', 'XLB', 'XME', 'IP', 'IYR', 'IYR', 'IYT', 
-                        'ITB', 'IYR', 'IVV', 'IYZ', 'XLU', 'XLU', 'IDU'] :
-        
-        sm1s.df_not_normalized.plot(kind="scatter",  x="Close", y="['"+t+"']", color = "red")
-        
-    plt.show()
-        
+from sequential_model_1stock_multifactors import check_data_correlation,evaluate_ticker_distribution        
         
 def main():
     init_config()
     print("Running in one ticker mode")
     print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
-    #check_data_correlation("/Users/albertogallini/projects/Market Price Fetcher/market_price_fetcher/data/price_fetcher_MSFT.csv")
-    evaluate_ticker_distribution(FOLDER_MARKET_DATA+"price_fetcher_PYPL.csv", 30, calibrate = True, model_date= "18-12-2023_portfolio_calibration")
-   
+    check_data_correlation(FOLDER_MARKET_DATA+"price_fetcher_PYPL.csv")
+    evaluate_ticker_distribution(SequentialModel3StockMultiFactor,FOLDER_MARKET_DATA+"price_fetcher_PYPL.csv", 2, calibrate = True, model_date= "18-12-2023_portfolio_calibration")
+
     
 if __name__ == '__main__':  
     main()
