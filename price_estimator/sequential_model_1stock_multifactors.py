@@ -224,6 +224,10 @@ earlystop = EarlyStopping(monitor='val_loss',  # Quantity to be monitored.
         
         
 
+def create_instance_of_class(class_type, *args, **kwargs):
+    return class_type(*args, **kwargs)
+
+
 def evaluate_ticker(class_type, input_file:str, calibrate: bool, scenario_id: int, model_date: str):
     print("Calibrate %s ...", class_type )
     seq_model = create_instance_of_class(class_type,   
@@ -336,7 +340,7 @@ def main():
     init_config()
     print("Running in one ticker mode")
     print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
-    check_data_correlation("/Volumes/data/price_fetcher_PYPL.csv")
+    check_data_correlation(FOLDER_MARKET_DATA+"price_fetcher_PYPL.csv")
     evaluate_ticker_distribution(SequentialModel1StockMultiFactor, FOLDER_MARKET_DATA + "price_fetcher_META.csv", 3, calibrate = True, model_date= None)
    
     

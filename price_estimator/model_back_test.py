@@ -116,7 +116,9 @@ import sys
 def main():
     init_config()
     from multiprocessing import Pool
-    file_name = "/Volumes/data/price_fetcher_IONQ.csv"
+    file_name = FOLDER_MARKET_DATA + PREFIX_PRICE_FETCHER +"MSFTok. 
+    
+    .csv"
     print("Processing " + file_name)
     with Pool(processes = 10) as pool: 
         params = [(file_name, None, i) for i in range(10)]

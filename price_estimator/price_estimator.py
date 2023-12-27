@@ -114,8 +114,9 @@ def produce_estimate_price_distributions(ticker_list : list , input_data_dir: st
     for ticker_index in range (0, len(ticker_list)): 
         fprices = list()
         try:
-            sm1s = SequentialModel1StockMultiFactor(input_data_price_csv=files[ticker_index],input_data_rates_csv= FOLDER_MARKET_DATA + "/usd_rates.csv") 
-            #sm1s = SequentialModel1StockAndRates(files[ticker_index],lookback = 14, epochs = 12, training_percentage = 0.90) 
+            sm1s = SequentialModel1StockMultiFactor(input_data_price_csv = files[ticker_index],
+                                                    input_data_rates_csv = FOLDER_MARKET_DATA + FILE_NAME_RATES,
+                                                    input_fear_and_greed_csv = FOLDER_MARKET_DATA + FILE_NAME_FNG) 
         except Exception as e:
             print("Caught an exception: ", e)
             print("Error in generating model for " + files[ticker_index] )
@@ -191,6 +192,7 @@ import sys
 
 def main():
     init_config("config.json")
+    print(os.environ['PYTHONPATH'])
     scenarios = 50
     run_dask(scenarios)
     produce_distribution_pdf_from_file(FOLDER_REPORD_PDF)

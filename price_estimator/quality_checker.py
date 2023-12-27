@@ -171,7 +171,7 @@ class QualityChecker(object):
         
         
 if __name__ == '__main__':
-    init_config("price_estimator/config.json")
+    init_config("config.json")
     logger = logging.getLogger('quality_checker.logger')
     file_handler = logging.FileHandler('quality_checker.log')
     logger.addHandler(file_handler)
@@ -180,7 +180,7 @@ if __name__ == '__main__':
     logger.info("Quality Checker ...")
     
     
-    qc = QualityChecker(report_folder = FOLDER_REPORD_PDF, prevision_date = datetime.strptime("22-12-2023", "%d-%m-%Y"), logger = logger)
+    qc = QualityChecker(report_folder = FOLDER_REPORD_PDF, prevision_date = datetime.strptime("26-12-2023", "%d-%m-%Y"), logger = logger)
     qc.return_quality_stats_line()
     
         

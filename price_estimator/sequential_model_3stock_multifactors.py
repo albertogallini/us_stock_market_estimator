@@ -160,7 +160,7 @@ def main():
     init_config()
     print("Running in one ticker mode")
     print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
-    check_data_correlation(FOLDER_MARKET_DATA+"price_fetcher_PYPL.csv")
+    check_data_correlation(FOLDER_MARKET_DATA+"price_fetcher_GOOGL.csv")
     evaluate_ticker_distribution(SequentialModel3StockMultiFactor,FOLDER_MARKET_DATA+"price_fetcher_PYPL.csv", 2, calibrate = True, model_date= "18-12-2023_portfolio_calibration")
 
     

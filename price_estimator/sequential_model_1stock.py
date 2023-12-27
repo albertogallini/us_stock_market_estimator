@@ -295,7 +295,7 @@ def main():
 
     print("Running in oneticker mode")
     init_config()
-    evaluate_ticker_distribution("/Users/albertogallini/projects/Market Price Fetcher/market_price_fetcher/data/price_fetcher_IONS.csv", 10)
+    evaluate_ticker_distribution(FOLDER_MARKET_DATA+"/price_fetcher_IONS.csv", 10)
    
     
 if __name__ == '__main__':  
