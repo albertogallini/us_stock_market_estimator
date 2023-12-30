@@ -31,7 +31,7 @@ from  sequential_model_1stock import evaluate_ticker_distribution
 
 class SequentialModel3StockMultiFactor(SequentialModel1StockMultiFactor):
     
-    __OUTPUT_SERIES_NUMBER = 3
+    __OUTPUT_SERIES_NUMBER = 14
     
     def __init__(self, input_data_price_csv : str, 
                  input_data_rates_csv : str ,
@@ -87,11 +87,13 @@ class SequentialModel3StockMultiFactor(SequentialModel1StockMultiFactor):
         self.model = tf.keras.Sequential()
         #self.model.add(tf.keras.layers.Reshape((-1, 1)))
         
-        self.model.add(tf.keras.layers.LSTM(self.lookback * factor_num  , activation='tanh',input_shape=(self.lookback, factor_num ))) #, recurrent_activation='sigmoid'))
+        self.model.add(tf.keras.layers.LSTM(self.lookback * factor_num, activation='tanh',input_shape=(self.lookback, factor_num ))) #, recurrent_activation='sigmoid'))
         self.model.add(tf.keras.layers.Dense(units = factor_num, 
                                              kernel_regularizer=regularizers.L1L2(l1=1e-5, l2=1e-4),
                                              bias_regularizer=regularizers.L2(1e-4),
                                              activity_regularizer=regularizers.L2(1e-5)))
+        self.model.add(tf.keras.layers.Reshape((-1, 1)))  # Reshape the output of the Dense layer
+        self.model.add(tf.keras.layers.LSTM(self.__OUTPUT_SERIES_NUMBER, activation='relu'))
         self.model.add(tf.keras.layers.Dense(self.__OUTPUT_SERIES_NUMBER))
            
         self.logger.info('Compile model...')

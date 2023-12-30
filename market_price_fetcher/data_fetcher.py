@@ -9,7 +9,7 @@ from  index_sector_fetcher import IndexSectorFetcher
 from  rates_fetcher import IRFetcherTreasury
 from  fear_and_greed_index import FearAndGreedIndex
 
-from const_and_utils import *
+from price_estimator.const_and_utils import *
         
 if __name__ == '__main__':
     

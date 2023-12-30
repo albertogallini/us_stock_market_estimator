@@ -116,10 +116,10 @@ import sys
 def main():
     init_config()
     from multiprocessing import Pool
-    file_name = FOLDER_MARKET_DATA + PREFIX_PRICE_FETCHER +"TSLA.csv"
+    file_name = FOLDER_MARKET_DATA + PREFIX_PRICE_FETCHER +"IONQ.csv"
     print("Processing " + file_name)
-    with Pool(processes = 10) as pool: 
-        params = [(file_name, None, i) for i in range(10)]
+    with Pool(processes = 5) as pool: 
+        params = [(file_name, None, i) for i in range(1)]
         print(params)
         results = pool.map(back_test, params)
         predictions, sm1s = zip(*results)
