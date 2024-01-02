@@ -180,7 +180,7 @@ if __name__ == '__main__':
     logger.info("Quality Checker ...")
     
     
-    qc = QualityChecker(report_folder = FOLDER_REPORD_PDF, prevision_date = datetime.strptime("26-12-2023", "%d-%m-%Y"), logger = logger)
+    qc = QualityChecker(report_folder = FOLDER_REPORD_PDF, prevision_date = datetime.strptime("29-12-2023", "%d-%m-%Y"), logger = logger)
     qc.return_quality_stats_line()
     
         

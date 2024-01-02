@@ -123,8 +123,8 @@ class SentimentModel(object):
 
         logits = outputs.logits
         probabilities = torch.nn.functional.softmax(logits, dim=1)
-        print(logits)
-        print(probabilities)
+        #print(logits)
+        #print(probabilities)
         import numpy as np
         sentiment_score =  torch.argmax( probabilities[0] ) / len(probabilities[0])  # Assuming 1 corresponds to positive sentiment
         return sentiment_score
@@ -150,12 +150,17 @@ class TestSentimentModel(unittest.TestCase):
         print("Start...")
         top_news = get_yahoo_finance_news_rss()
         sm = SentimentModel()
+        acc_score = 0
+        counter   = 0
         for n in top_news:
             news_text = get_news_text(n[1])
             if(news_text is not None):
                 score = sm.get_sentiment_score(news_text)
-                print(f"------------ news {n[0]:s} , score = {score:.6f}")
+                #print(f"------------ news {n[0]:s} , score = {score:.6f}")
+                acc_score += score
+                counter += 1
                 self.assertGreater(score,0) 
+        print("Accumulated score {:.5f}".format((acc_score/counter)/0.5))
 
 
             

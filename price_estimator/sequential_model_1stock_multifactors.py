@@ -32,7 +32,7 @@ class SequentialModel1StockMultiFactor(SequentialModel1StockAndRates):
                 input_data_price_csv : str,
                 input_data_rates_csv : str ,
                 input_fear_and_greed_csv : str,
-                lookback : int  = 14,
+                lookback : int  = 28,
                 epochs : int = 6,
                 training_percentage : float = 0.90,
                 logger: logging.Logger = None ) :
@@ -143,6 +143,12 @@ class SequentialModel1StockMultiFactor(SequentialModel1StockAndRates):
         # Convert DataFrame to numpy array
         self.data =  self.df[ self.calibration_factors_list ].values
 
+        price_vol = self.df['Close'].std()
+        print("Adjsuting lookback {} --> norm. price stddev {:.5f}, adjusted lookback: {}".format(self.lookback,price_vol, int(price_vol*self.lookback)))
+        self.lookback = int(price_vol*self.lookback)
+
+        
+
     
     def calibrate_model (self):
        
@@ -174,18 +180,23 @@ class SequentialModel1StockMultiFactor(SequentialModel1StockAndRates):
         
         self.logger.info('Defining model ...')
         self.logger.info('RNN model ...')
+
         self.model = tf.keras.Sequential()
-        #self.model.add(tf.keras.layers.Reshape((-1, 1)))
-        
         self.model.add(tf.keras.layers.LSTM(self.lookback * factor_num, activation='tanh',input_shape=(self.lookback, factor_num ))) #, recurrent_activation='sigmoid'))
         self.model.add(tf.keras.layers.Dense(units = factor_num, 
-                                             kernel_regularizer=regularizers.L1L2(l1=1e-5, l2=1e-4),
+                                             kernel_regularizer=regularizers.L1L2(l1=1e-4, l2=1e-4),
                                              bias_regularizer=regularizers.L2(1e-4),
                                              activity_regularizer=regularizers.L2(1e-5)))
-        self.model.add(tf.keras.layers.Dense(1))
+        self.model.add(tf.keras.layers.Reshape((-1, 1)))  # Reshape the output of the Dense layer
+        self.model.add(tf.keras.layers.LSTM(self.lookback, activation='relu'))
+        self.model.add(tf.keras.layers.Dense(1, 
+                                             kernel_regularizer=regularizers.L1L2(l1=1e-4, l2=1e-4),
+                                             bias_regularizer=regularizers.L2(1e-4),
+                                             activity_regularizer=regularizers.L2(1e-4)))
+           
            
         self.logger.info('Compile model...')
-        self.model.compile(optimizer='adam', loss='mse', metrics=['accuracy'])
+        self.model.compile(optimizer='adam', loss='mae', metrics=['mse'])
         
         # Train model
         self.logger.info('Training model ...')

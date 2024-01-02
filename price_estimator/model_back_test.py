@@ -84,10 +84,9 @@ def back_test(args: tuple):
     print(input_file)
     print(calibration_folder)
     try:
-        sm1s = SequentialModel3StockMultiFactor(input_data_price_csv=input_file,
+        sm1s = SequentialModel1StockMultiFactor(input_data_price_csv=input_file,
                                                 input_data_rates_csv=FOLDER_MARKET_DATA+"/usd_rates.csv", 
-                                                input_fear_and_greed_csv= FOLDER_MARKET_DATA+"/fear_and_greed.csv", 
-                                                lookback = 14) 
+                                                input_fear_and_greed_csv= FOLDER_MARKET_DATA+"/fear_and_greed.csv") 
         if(calibration_folder == None):
             print("Calibrating the model ...")
             sm1s.calibrate_model()
@@ -119,7 +118,7 @@ def main():
     file_name = FOLDER_MARKET_DATA + PREFIX_PRICE_FETCHER +"IONQ.csv"
     print("Processing " + file_name)
     with Pool(processes = 5) as pool: 
-        params = [(file_name, None, i) for i in range(1)]
+        params = [(file_name, None, i) for i in range(30)]
         print(params)
         results = pool.map(back_test, params)
         predictions, sm1s = zip(*results)
