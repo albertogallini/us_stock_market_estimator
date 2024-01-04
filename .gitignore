@@ -3,4 +3,5 @@ market_price_fetcher/__pycache__
 scrapers/__pycache__
 fine_tuned_sentiment_model
 multifactor_check.csv
+model.png
 *.log
