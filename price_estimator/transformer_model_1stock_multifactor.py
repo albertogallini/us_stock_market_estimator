@@ -5,9 +5,11 @@ Created on Nov 28, 2023
 '''
 
 import tensorflow as tf
-from   tensorflow.keras import layers,regularizers
-from   tensorflow import keras
-from   tensorflow.keras.metrics import F1Score
+from tensorflow import keras
+from tensorflow.keras import layers,regularizers
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Input, Dense
+from tensorflow.keras.layers import MultiHeadAttention
 
 
 import pandas as pd
@@ -27,30 +29,8 @@ from  sequential_model_1stock import evaluate_ticker_distribution
 
 
 
-@tf.keras.utils.register_keras_serializable(package='Custom')
-class SM3SDistanceMetric(tf.keras.metrics.Metric):
-    def __init__(self, name='Mean Absolute Error Metric', **kwargs):
-        super(SM3SDistanceMetric, self).__init__(name=name, **kwargs)
-        self.total = self.add_weight(name='total', initializer='zeros')
-        self.count = self.add_weight(name='count', initializer='zeros')
 
-    def update_state(self, y_true, y_pred, sample_weight=None):
-        error =  (tf.abs(tf.pow(y_pred,2) - tf.pow(y_true,2)))
-        self.total.assign_add(tf.reduce_max(error))
-        self.count.assign_add(tf.cast(tf.size(y_true), tf.float32))
-
-    def result(self):
-        return tf.math.divide_no_nan(self.total, self.count)
-
-    def reset_state(self):
-        self.total.assign(0.)
-        self.count.assign(0.)
-
-
-
-class SequentialModel3StockMultiFactor(SequentialModel1StockMultiFactor):
-    
-    __OUTPUT_SERIES_NUMBER = 5
+class TransformerModel1StockMultiFactor(SequentialModel1StockMultiFactor):
 
     
     def __init__(self, input_data_price_csv : str, 
@@ -78,8 +58,8 @@ class SequentialModel3StockMultiFactor(SequentialModel1StockMultiFactor):
             return
         
         datal = self.df['Close'].values
-        inputs = np.array([self.data[i:i+self.lookback] for i in range(len(self.data)-self.lookback-self.__OUTPUT_SERIES_NUMBER)])
-        labels = np.array([datal[i:i+self.__OUTPUT_SERIES_NUMBER] for i in range(self.lookback, len(datal)-self.__OUTPUT_SERIES_NUMBER)])
+        inputs = np.array([self.data[i:i+self.lookback] for i in range(len(self.data)-self.lookback-1)])
+        labels = np.array([datal[i:i+1] for i in range(self.lookback, len(datal)-1)])
         
         print(inputs.shape)
         print(labels.shape)
@@ -102,30 +82,28 @@ class SequentialModel3StockMultiFactor(SequentialModel1StockMultiFactor):
         self.logger.debug(self.x_test.shape)
         
         self.logger.info('Defining model ...')
-        self.logger.info('RNN model ...')
+        self.logger.info('Transformers model ...')
 
-        self.model = tf.keras.Sequential()
-        self.model.add(tf.keras.layers.LSTM(self.lookback * factor_num, activation='tanh',input_shape=(self.lookback, factor_num ))) #, recurrent_activation='sigmoid'))
-        self.model.add(tf.keras.layers.Dense(units = factor_num, 
-                                             kernel_regularizer=regularizers.L1L2(l1=1e-4 * (-self.price_vol+1), l2=1e-4*(-self.price_vol+1)),
-                                             bias_regularizer=regularizers.L2(1e-4),
-                                             activity_regularizer=regularizers.L2(1e-5)))
-        self.model.add(tf.keras.layers.Dense(self.lookback, 
-                                             kernel_regularizer=regularizers.L1L2(l1=1e-4*(-self.price_vol+1), l2=1e-4*(-self.price_vol+1)),
-                                             bias_regularizer=regularizers.L2(1e-4),
-                                             activity_regularizer=regularizers.L2(1e-5)))
-        self.model.add(tf.keras.layers.Dense(self.__OUTPUT_SERIES_NUMBER, 
-                                             kernel_regularizer=regularizers.L1L2(l1=1e-4*(-self.price_vol+1), l2=1e-4*(-self.price_vol+1)),
-                                             bias_regularizer=regularizers.L2(1e-4),
-                                             activity_regularizer=regularizers.L2(1e-5)))
-           
-        self.logger.info('Compile model...')
-        self.model.compile(optimizer='adam', loss='mean_squared_error', metrics=[SM3SDistanceMetric()])
-        
+        # Define the inputs
+        inputs = [Input(shape=(self.x_test.shape[1], 1)) for _ in range(self.x_test.shape[2])]
+        # Concatenate the inputs
+        x = tf.keras.layers.Concatenate(axis=-1)(inputs)
+        # Apply the Transformer (MultiHeadAttention) layer
+        x = MultiHeadAttention(num_heads=factor_num, key_dim=factor_num)(x, x)
+        # Add a global average pooling layer
+        x = tf.keras.layers.GlobalAveragePooling1D()(x)
+        # Add a dense layer for the output
+        output = Dense(1)(x)
+        # Define the model
+        self.model = Model(inputs=inputs, outputs=output)
+        # Compile the model
+        self. model.compile(optimizer='adam', loss='mse', metrics=['mse'])
         # Train model
         self.logger.info('Training model ...')
-        self.model.fit(x_train, y_train, epochs=self.epochs, validation_data=(self.x_test, self.y_test),callbacks=[earlystop])
+        x_train_list = [x_train[:, :, i:i+1]     for i in range(x_train.shape[2])]
         
+        x_test_list =  [self.x_test[:, :, i:i+1] for i in range(self.x_test.shape[2])]
+        self.model.fit(x_train_list, y_train, epochs=self.epochs, callbacks=[earlystop])
         self.logger.info('calibration complete.')
         
         
@@ -133,15 +111,38 @@ class SequentialModel3StockMultiFactor(SequentialModel1StockMultiFactor):
     def get_forecasted_price(self, denormalize = True):
         self.logger.info('predict next day market price ') 
         next_biz_day_input = np.array([self.data[len(self.data) - self.lookback:len(self.data)+1]])
-        print("Input: " + str(next_biz_day_input.shape))
-        next_biz_day_price = self.model.predict(next_biz_day_input)
+        next_biz_day_input_list = [next_biz_day_input[:, :, i:i+1]     for i in range(next_biz_day_input.shape[2])]
+        #print("Input: " + str(next_biz_day_input_list))
+        next_biz_day_price = self.model.predict(next_biz_day_input_list)
         if (denormalize):
             return ((next_biz_day_price * self.price_denormalization_factor) + self.price_denormalization_sum ), ((self.data[len(self.data)-1][0]* self.price_denormalization_factor) + self.price_denormalization_sum )
         else:
             return next_biz_day_price,self.data[len(self.data)-1]
         
+    def compute_predictions(self, denormalize : bool = False):
+        if (self.model):
+            self.logger.info('back-testing model ...') 
+            
+            inputs = np.array([self.data[i - self.lookback:i] for i in range(self.lookback, len(self.data))])
+            labels =  self.df['Close'][self.lookback:]
+            train_size = int(len(inputs) * self.training_percentage)
+            x_train, self.x_test = inputs[:train_size], inputs[train_size:]
+            y_train, self.y_test = labels[:train_size], labels[train_size:]
+            self.train_time, self.test_time = self.time[:train_size], self.time[train_size+self.lookback:]
+            # Generate prediction
+            x_test_list =  [self.x_test[:, :, i:i+1] for i in range(self.x_test.shape[2])]
+            self.predictions = self.model.predict(x_test_list)
+            self.logger.debug("Predictions Shape")
+            self.logger.debug(self.predictions.shape)
+            
+            if (denormalize):
+                self.logger.debug("price_denormalization_factor: "+str(self.price_denormalization_factor) )
+                self.logger.debug("price_denormalization_sum: "   +str(self.price_denormalization_sum)    )
+                self.y_test      = (self.y_test      * self.price_denormalization_factor) + self.price_denormalization_sum 
+                self.predictions = (self.predictions * self.price_denormalization_factor) + self.price_denormalization_sum
+        
     def get_num_forecasted_prices(self):
-        return self._SequentialModel3StockMultiFactor__OUTPUT_SERIES_NUMBER
+        return 1
         
    
                         
@@ -151,7 +152,7 @@ class SequentialModel3StockMultiFactor(SequentialModel1StockMultiFactor):
 from tensorflow.keras.callbacks import EarlyStopping
 
 # Define your early stopping criteria
-earlystop = EarlyStopping(monitor='val_loss',  # Quantity to be monitored.
+earlystop = EarlyStopping(monitor='loss',  # Quantity to be monitored.
                           min_delta=0.0001,  # Minimum change in the monitored quantity to qualify as an improvement.
                           patience=4,  # Number of epochs with no improvement after which training will be stopped.
                           verbose=1,  # Verbosity mode.
@@ -163,7 +164,7 @@ earlystop = EarlyStopping(monitor='val_loss',  # Quantity to be monitored.
 
 def evaluate_ticker(input_file:str, calibrate: bool, scenario_id: int, model_date: str):
     print("Calibrate SequentialModel1StockMultiFactor Model ...")
-    sm3s = SequentialModel3StockMultiFactor(input_data_price_csv = input_file,
+    sm3s = TransformerModel1StockMultiFactor(input_data_price_csv = input_file,
                                             input_data_rates_csv = FOLDER_MARKET_DATA+"/usd_rates.csv",
                                             input_fear_and_greed_csv = FOLDER_MARKET_DATA+"/fear_and_greed.csv") 
     
@@ -185,8 +186,8 @@ def main():
     init_config()
     print("Running in one ticker mode")
     print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
-    check_data_correlation(FOLDER_MARKET_DATA+"price_fetcher_GOOGL.csv")
-    evaluate_ticker_distribution(SequentialModel3StockMultiFactor,FOLDER_MARKET_DATA+"price_fetcher_PYPL.csv", 2, calibrate = True, model_date= "18-12-2023_portfolio_calibration")
+    #check_data_correlation(FOLDER_MARKET_DATA+"price_fetcher_GOOGL.csv")
+    evaluate_ticker_distribution(TransformerModel1StockMultiFactor,FOLDER_MARKET_DATA+"price_fetcher_PYPL.csv", 20, calibrate = True, model_date= "18-12-2023_portfolio_calibration")
 
     
 if __name__ == '__main__':  

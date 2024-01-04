@@ -5,10 +5,12 @@ Created on Dec 19, 2023
 '''
 import const_and_utils
 from const_and_utils import *
-from  sequential_model_1stock import SequentialModel1Stock
-from  sequential_model_1stock_and_rates import SequentialModel1StockAndRates
+
+from  sequential_model_1stock              import SequentialModel1Stock
+from  sequential_model_1stock_and_rates    import SequentialModel1StockAndRates
 from  sequential_model_1stock_multifactors import SequentialModel1StockMultiFactor
 from  sequential_model_3stock_multifactors import SequentialModel3StockMultiFactor
+from  transformer_model_1stock_multifactor import TransformerModel1StockMultiFactor
 
 import pandas as pd
 import numpy as np
@@ -84,9 +86,10 @@ def back_test(args: tuple):
     print(input_file)
     print(calibration_folder)
     try:
-        sm1s = SequentialModel1StockMultiFactor(input_data_price_csv=input_file,
+        sm1s = TransformerModel1StockMultiFactor(input_data_price_csv=input_file,
                                                 input_data_rates_csv=FOLDER_MARKET_DATA+"/usd_rates.csv", 
-                                                input_fear_and_greed_csv= FOLDER_MARKET_DATA+"/fear_and_greed.csv") 
+                                                input_fear_and_greed_csv= FOLDER_MARKET_DATA+"/fear_and_greed.csv",
+                                                training_percentage=0.90) 
         if(calibration_folder == None):
             print("Calibrating the model ...")
             sm1s.calibrate_model()
@@ -97,6 +100,8 @@ def back_test(args: tuple):
         if (sm1s.model == None):
             return None, None
         
+        sm1s.plot_model()
+
     except Exception as e:
             print("Caught an exception: ", e)
             print("Error in calibrating model for " + input_file )
@@ -113,16 +118,27 @@ def back_test(args: tuple):
 import sys
 
 def main():
-    init_config()
-    from multiprocessing import Pool
-    file_name = FOLDER_MARKET_DATA + PREFIX_PRICE_FETCHER +"IONQ.csv"
-    print("Processing " + file_name)
-    with Pool(processes = 5) as pool: 
-        params = [(file_name, None, i) for i in range(30)]
-        print(params)
-        results = pool.map(back_test, params)
-        predictions, sm1s = zip(*results)
-        show_prediction_vs_actual_mult(predictions,get_ticker(file_name),sm1s[0])
+    if len(sys.argv) > 2:
+        try:
+
+            init_config()
+            from multiprocessing import Pool
+            file_name = FOLDER_MARKET_DATA + PREFIX_PRICE_FETCHER + sys.argv[1] +".csv"
+            print("Processing " + file_name)
+            with Pool(processes = 5) as pool: 
+                params = [(file_name, None, i) for i in range(int(sys.argv[2]))]
+                print(params)
+                results = pool.map(back_test, params)
+                predictions, sm1s = zip(*results)
+                show_prediction_vs_actual_mult(predictions,get_ticker(file_name),sm1s[0])
+
+        except Exception as e:
+            print("Caught an exception: ", e)
+            print("Error : " + file_name )
+        
+       
+    else:
+        print("Missing input ticker")
                 
 if __name__ == '__main__':
     main()

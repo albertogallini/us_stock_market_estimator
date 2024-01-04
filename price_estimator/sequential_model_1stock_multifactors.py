@@ -7,6 +7,7 @@ Created on Nov 28, 2023
 import tensorflow as tf
 from   tensorflow.keras import layers,regularizers
 from   tensorflow import keras
+from   tensorflow.keras.metrics import F1Score
 
 
 import pandas as pd
@@ -32,8 +33,8 @@ class SequentialModel1StockMultiFactor(SequentialModel1StockAndRates):
                 input_data_price_csv : str,
                 input_data_rates_csv : str ,
                 input_fear_and_greed_csv : str,
-                lookback : int  = 28,
-                epochs : int = 6,
+                lookback : int  = 14,
+                epochs : int = 12,
                 training_percentage : float = 0.90,
                 logger: logging.Logger = None ) :
         
@@ -143,9 +144,10 @@ class SequentialModel1StockMultiFactor(SequentialModel1StockAndRates):
         # Convert DataFrame to numpy array
         self.data =  self.df[ self.calibration_factors_list ].values
 
-        price_vol = self.df['Close'].std()
-        print("Adjsuting lookback {} --> norm. price stddev {:.5f}, adjusted lookback: {}".format(self.lookback,price_vol, int(price_vol*self.lookback)))
-        self.lookback = int(price_vol*self.lookback)
+
+        self.price_vol     = self.df['Close'].std() * 2
+        print("Adjsuting lookback {} --> 1 - 2.5 x norm. price stddev {:.5f}, adjusted lookback: {}".format(self.lookback,(-self.price_vol+1), int((-self.price_vol+1)*self.lookback)))
+        self.lookback = int((-self.price_vol+1)*self.lookback)
 
         
 
@@ -183,16 +185,18 @@ class SequentialModel1StockMultiFactor(SequentialModel1StockAndRates):
 
         self.model = tf.keras.Sequential()
         self.model.add(tf.keras.layers.LSTM(self.lookback * factor_num, activation='tanh',input_shape=(self.lookback, factor_num ))) #, recurrent_activation='sigmoid'))
-        self.model.add(tf.keras.layers.Dense(units = factor_num, 
-                                             kernel_regularizer=regularizers.L1L2(l1=1e-4, l2=1e-4),
+        self.model.add(tf.keras.layers.Dense(units = self.lookback * factor_num, 
+                                             kernel_regularizer=regularizers.L1L2(l1=1e-4*(-self.price_vol+1), l2=1e-4*(-self.price_vol+1)),
                                              bias_regularizer=regularizers.L2(1e-4),
                                              activity_regularizer=regularizers.L2(1e-5)))
-        self.model.add(tf.keras.layers.Reshape((-1, 1)))  # Reshape the output of the Dense layer
-        self.model.add(tf.keras.layers.LSTM(self.lookback, activation='relu'))
-        self.model.add(tf.keras.layers.Dense(1, 
-                                             kernel_regularizer=regularizers.L1L2(l1=1e-4, l2=1e-4),
+        self.model.add(tf.keras.layers.Dense(factor_num, 
+                                             kernel_regularizer=regularizers.L1L2(l1=1e-4*(-self.price_vol+1), l2=1e-4*(-self.price_vol+1)),
                                              bias_regularizer=regularizers.L2(1e-4),
-                                             activity_regularizer=regularizers.L2(1e-4)))
+                                             activity_regularizer=regularizers.L2(1e-5)))
+        self.model.add(tf.keras.layers.Dense(1, 
+                                             kernel_regularizer=regularizers.L1L2(l1=1e-4*(-self.price_vol+1), l2=1e-4*(-self.price_vol+1)),
+                                             bias_regularizer=regularizers.L2(1e-4),
+                                             activity_regularizer=regularizers.L2(1e-5)))
            
            
         self.logger.info('Compile model...')
@@ -203,7 +207,6 @@ class SequentialModel1StockMultiFactor(SequentialModel1StockAndRates):
         self.model.fit(x_train, y_train, epochs=self.epochs, validation_data=(self.x_test, self.y_test),callbacks=[earlystop])
         
         self.logger.info('calibration complete.')
-        
         
         
     def get_forecasted_price(self, denormalize = True):
@@ -229,7 +232,7 @@ from tensorflow.keras.callbacks import EarlyStopping
 # Define your early stopping criteria
 earlystop = EarlyStopping(monitor='val_loss',  # Quantity to be monitored.
                           min_delta=0.0001,  # Minimum change in the monitored quantity to qualify as an improvement.
-                          patience=6,  # Number of epochs with no improvement after which training will be stopped.
+                          patience=4,  # Number of epochs with no improvement after which training will be stopped.
                           verbose=1,  # Verbosity mode.
                           mode='auto')  # Direction of improvement is inferred        
         

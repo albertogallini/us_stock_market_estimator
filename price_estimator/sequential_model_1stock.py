@@ -227,6 +227,24 @@ class SequentialModel1Stock:
         df = pd.read_csv(path+"calibration_"+self.ticker[0]+"_"+scenario_id+".rfactors")
         self.price_denormalization_factor = df.price_denormalization_factor[0]
         self.price_denormalization_sum    = df.price_denormalization_sum[0]
+
+    
+    def plot_model(self, file_name:str = 'model.png'):
+        import pydot
+        dot = pydot.Dot()
+        dot.set_type('digraph')
+
+        # Traverse through the layers and add them to the dot object
+        for i, layer in enumerate(self.model.layers):
+            label = f"{layer.name}\ninput: {layer.input_shape}\noutput: {layer.output_shape}"
+            node = pydot.Node(str(i), label=label)
+            dot.add_node(node)
+            if i > 0:
+                edge = pydot.Edge(str(i-1), str(i))
+                dot.add_edge(edge)
+
+        # Save the dot object as a PNG image
+        dot.write_png(file_name)
         
         
         
@@ -288,6 +306,8 @@ def evaluate_ticker_distribution(input_file:str, scenarios: int = 10 ):
 
     # Print the 3 sigma
     print("3 sigma: ", 3*std)
+
+
     
     
         

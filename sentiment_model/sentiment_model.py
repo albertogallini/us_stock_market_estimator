@@ -156,11 +156,11 @@ class TestSentimentModel(unittest.TestCase):
             news_text = get_news_text(n[1])
             if(news_text is not None):
                 score = sm.get_sentiment_score(news_text)
-                #print(f"------------ news {n[0]:s} , score = {score:.6f}")
+                print(f"------------ news {n[0]:s} , score = {score:.6f}")
                 acc_score += score
                 counter += 1
                 self.assertGreater(score,0) 
-        print("Accumulated score {:.5f}".format((acc_score/counter)/0.5))
+        print("Accumulated score {:.5f}".format((acc_score/counter)))
 
 
             
