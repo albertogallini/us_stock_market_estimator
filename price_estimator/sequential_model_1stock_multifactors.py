@@ -243,7 +243,7 @@ def create_instance_of_class(class_type, *args, **kwargs):
 
 
 def evaluate_ticker(class_type, input_file:str, calibrate: bool, scenario_id: int, model_date: str):
-    print("Calibrate %s ...", class_type )
+    print("Calibrate {} ...".format(class_type))
     seq_model = create_instance_of_class(class_type,   
                                          input_data_price_csv = input_file,
                                          input_data_rates_csv = FOLDER_MARKET_DATA+"/usd_rates.csv",
@@ -266,9 +266,10 @@ def evaluate_ticker_distribution(class_type, input_file:str, scenarios: int = 10
     for i in range (0,scenarios):
         ticker, seq_model = evaluate_ticker(class_type, input_file=input_file, calibrate=calibrate, scenario_id=i, model_date=model_date)
         p_list,p_1 = seq_model.get_forecasted_price()
-        for i in p_list:
+        for j in p_list:
             fprices_ml.append(p_list[0])
             
+    
     num_sub_plots = seq_model.get_num_forecasted_prices()
 
 
@@ -276,7 +277,7 @@ def evaluate_ticker_distribution(class_type, input_file:str, scenarios: int = 10
 
     for i in range (0,num_sub_plots):
 
-        fprices = p_list
+        fprices = fprices_ml
         if (num_sub_plots > 1):
             fprices = [a[i] for a in fprices_ml]
    

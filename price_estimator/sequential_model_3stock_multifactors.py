@@ -151,7 +151,7 @@ class SequentialModel3StockMultiFactor(SequentialModel1StockMultiFactor):
 from tensorflow.keras.callbacks import EarlyStopping
 
 # Define your early stopping criteria
-earlystop = EarlyStopping(monitor='val_loss',  # Quantity to be monitored.
+earlystop = EarlyStopping(monitor='loss',  # Quantity to be monitored.
                           min_delta=0.0001,  # Minimum change in the monitored quantity to qualify as an improvement.
                           patience=4,  # Number of epochs with no improvement after which training will be stopped.
                           verbose=1,  # Verbosity mode.
@@ -186,7 +186,7 @@ def main():
     print("Running in one ticker mode")
     print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
     check_data_correlation(FOLDER_MARKET_DATA+"price_fetcher_GOOGL.csv")
-    evaluate_ticker_distribution(SequentialModel3StockMultiFactor,FOLDER_MARKET_DATA+"price_fetcher_PYPL.csv", 2, calibrate = True, model_date= "18-12-2023_portfolio_calibration")
+    evaluate_ticker_distribution(SequentialModel3StockMultiFactor,FOLDER_MARKET_DATA+"price_fetcher_PYPL.csv", 5, calibrate = True, model_date= "18-12-2023_portfolio_calibration")
 
     
 if __name__ == '__main__':  

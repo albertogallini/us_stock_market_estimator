@@ -107,7 +107,6 @@ class TransformerModel1StockMultiFactor(SequentialModel1StockMultiFactor):
         self.logger.info('calibration complete.')
         
         
-        
     def get_forecasted_price(self, denormalize = True):
         self.logger.info('predict next day market price ') 
         next_biz_day_input = np.array([self.data[len(self.data) - self.lookback:len(self.data)+1]])
@@ -115,9 +114,10 @@ class TransformerModel1StockMultiFactor(SequentialModel1StockMultiFactor):
         #print("Input: " + str(next_biz_day_input_list))
         next_biz_day_price = self.model.predict(next_biz_day_input_list)
         if (denormalize):
-            return ((next_biz_day_price * self.price_denormalization_factor) + self.price_denormalization_sum ), ((self.data[len(self.data)-1][0]* self.price_denormalization_factor) + self.price_denormalization_sum )
+            return ((next_biz_day_price[0] * self.price_denormalization_factor) + self.price_denormalization_sum ), ((self.data[len(self.data)-1][0]* self.price_denormalization_factor) + self.price_denormalization_sum )
         else:
-            return next_biz_day_price,self.data[len(self.data)-1]
+            return next_biz_day_price[0],self.data[len(self.data)-1]
+        
         
     def compute_predictions(self, denormalize : bool = False):
         if (self.model):
@@ -186,7 +186,7 @@ def main():
     init_config()
     print("Running in one ticker mode")
     print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
-    #check_data_correlation(FOLDER_MARKET_DATA+"price_fetcher_GOOGL.csv")
+    check_data_correlation(FOLDER_MARKET_DATA+"price_fetcher_GOOGL.csv")
     evaluate_ticker_distribution(TransformerModel1StockMultiFactor,FOLDER_MARKET_DATA+"price_fetcher_PYPL.csv", 20, calibrate = True, model_date= "18-12-2023_portfolio_calibration")
 
     
