@@ -5,9 +5,8 @@ Created on Nov 28, 2023
 '''
 
 import tensorflow as tf
-from   tensorflow.keras import layers,regularizers
+from   tensorflow.keras import regularizers
 from   tensorflow import keras
-from   tensorflow.keras.metrics import F1Score
 
 
 import pandas as pd
@@ -36,6 +35,7 @@ class SequentialModel1StockMultiFactor(SequentialModel1StockAndRates):
                 lookback : int  = 14,
                 epochs : int = 12,
                 training_percentage : float = 0.90,
+                use_lstm : bool = False,
                 logger: logging.Logger = None ) :
         
         if (logger == None):
@@ -60,6 +60,7 @@ class SequentialModel1StockMultiFactor(SequentialModel1StockAndRates):
         self.epochs = epochs
         self.training_percentage = training_percentage
         self.ticker = get_ticker(input_data_price_csv)
+        self.use_lstm = use_lstm
         
             
         os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  
@@ -184,7 +185,11 @@ class SequentialModel1StockMultiFactor(SequentialModel1StockAndRates):
         self.logger.info('RNN model ...')
 
         self.model = tf.keras.Sequential()
-        self.model.add(tf.keras.layers.LSTM(self.lookback * factor_num, activation='tanh',input_shape=(self.lookback, factor_num ))) #, recurrent_activation='sigmoid'))
+        if(self.use_lstm):
+            self.model.add(tf.keras.layers.LSTM(self.lookback * factor_num, activation='tanh',input_shape=(self.lookback, factor_num ))) #, recurrent_activation='sigmoid'))
+        else:
+            self.model.add(tf.keras.layers.SimpleRNN(self.lookback * factor_num, activation='tanh',input_shape=(self.lookback, factor_num ))) #, recurrent_activation='sigmoid'))
+
         self.model.add(tf.keras.layers.Dense(units = self.lookback * factor_num, 
                                              kernel_regularizer=regularizers.L1L2(l1=1e-4*(-self.price_vol+1), l2=1e-4*(-self.price_vol+1)),
                                              bias_regularizer=regularizers.L2(1e-4),
@@ -237,10 +242,6 @@ earlystop = EarlyStopping(monitor='val_loss',  # Quantity to be monitored.
                           mode='auto')  # Direction of improvement is inferred        
         
         
-
-def create_instance_of_class(class_type, *args, **kwargs):
-    return class_type(*args, **kwargs)
-
 
 def evaluate_ticker(class_type, input_file:str, calibrate: bool, scenario_id: int, model_date: str):
     print("Calibrate {} ...".format(class_type))

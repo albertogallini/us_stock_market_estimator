@@ -39,6 +39,7 @@ class TransformerModel1StockMultiFactor(SequentialModel1StockMultiFactor):
                  lookback : int  = 14, 
                  epochs : int = 12,
                  training_percentage : float = 0.90,
+                 use_lstm : bool = False,
                  logger: logging.Logger = None ) :
         
         super().__init__(input_data_price_csv,
@@ -47,6 +48,7 @@ class TransformerModel1StockMultiFactor(SequentialModel1StockMultiFactor):
                        lookback,
                        epochs,
                        training_percentage,
+                       use_lstm,
                        logger)
         
         

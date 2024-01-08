@@ -3,7 +3,7 @@ Created on Dec 19, 2023
 
 @author: albertogallini
 '''
-import const_and_utils
+
 from const_and_utils import *
 
 from  sequential_model_1stock              import SequentialModel1Stock
@@ -82,32 +82,34 @@ def back_test(args: tuple):
     input_file = args[0]
     calibration_folder = args[1]
     scenario_id = str(args[2])
+    class_type  = args[3]
     
     print(input_file)
     print(calibration_folder)
     try:
-        sm1s = TransformerModel1StockMultiFactor(input_data_price_csv=input_file,
-                                                input_data_rates_csv=FOLDER_MARKET_DATA+"/usd_rates.csv", 
-                                                input_fear_and_greed_csv= FOLDER_MARKET_DATA+"/fear_and_greed.csv",
-                                                training_percentage=0.90) 
+        prediction_model = create_instance_of_class(class_type,  
+                                          input_data_price_csv=input_file,
+                                          input_data_rates_csv=FOLDER_MARKET_DATA+"/usd_rates.csv", 
+                                          input_fear_and_greed_csv= FOLDER_MARKET_DATA+"/fear_and_greed.csv",
+                                          training_percentage=0.90) 
         if(calibration_folder == None):
             print("Calibrating the model ...")
-            sm1s.calibrate_model()
+            prediction_model.calibrate_model()
         else:
             print("Loading the model ...")
-            sm1s.load_model(calibration_folder, scenario_id)
+            prediction_model.load_model(calibration_folder, scenario_id)
             
-        if (sm1s.model == None):
+        if (prediction_model.model == None):
             return None, None
         
-        sm1s.plot_model()
+        prediction_model.plot_model()
 
     except Exception as e:
             print("Caught an exception: ", e)
             print("Error in calibrating model for " + input_file )
         
-    sm1s.compute_predictions(denormalize = True)
-    return sm1s.predictions, sm1s
+    prediction_model.compute_predictions(denormalize = True)
+    return prediction_model.predictions, prediction_model
 
 
 
@@ -118,15 +120,22 @@ def back_test(args: tuple):
 import sys
 
 def main():
+    
+    init_config()
+    model_class = get_model_class(None)
+
     if len(sys.argv) > 2:
         try:
 
-            init_config()
             from multiprocessing import Pool
             file_name = FOLDER_MARKET_DATA + PREFIX_PRICE_FETCHER + sys.argv[1] +".csv"
-            print("Processing " + file_name)
+            print("Processing " + file_name  + "\n")
+            
+            if len(sys.argv) > 3:
+                model_class = get_model_class(sys.argv[3])
+
             with Pool(processes = 5) as pool: 
-                params = [(file_name, None, i) for i in range(int(sys.argv[2]))]
+                params = [(file_name, None, i,model_class) for i in range(int(sys.argv[2]))]
                 print(params)
                 results = pool.map(back_test, params)
                 predictions, sm1s = zip(*results)

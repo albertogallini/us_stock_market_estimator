@@ -130,13 +130,44 @@ class SentimentModel(object):
         return sentiment_score
 
         
+    
+NEWS_DATA_FILE_NAME_CSV  =  'news_scores.csv'
+def save_to_csv(data):
+    import csv,os,pandas as pd
+    data = data.encode('ascii', 'ignore').decode()
+    print("Saving --> " + data)
+   
+    news_df = pd.DataFrame()
+    if not os.path.exists(NEWS_DATA_FILE_NAME_CSV):
+        # Create the file if it doesn't exist
+        with open(NEWS_DATA_FILE_NAME_CSV, 'w') as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow(['src', 'news', 'date', 'score', "news_text"])
+    else: 
+        news_df = pd.read_csv(NEWS_DATA_FILE_NAME_CSV)
+        
+    # this is very inefficient. We should add an md5 as Key or however a unique numeri id to the news.
+    # I'm planning to store into a db going forward. For the moment this is fine.   
+    with open('news_scores.csv', mode='a', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        src, news, date, score, news_text = data.split('|')
+        if ( news_df.empty 
+            or 
+            (not news_df.empty and news_df[news_df['news'].apply(lambda nt: nt == news.split(':')[1])].empty)
+            ):
+             writer.writerow([src.split(':')[1],news.split(':')[1], date.split(':')[1], score.split(':')[1],news_text.split(':')[1]])
+        else: 
+            print("Duplicated news : {}".format(news.split(':')[1]))
 
 
- 
+print("Data written to output.csv successfully!")
+
+
 import unittest
 import logging  
 import pandas as pd
-from scrapers.yahoof_scraper import get_yahoo_finance_news_rss,get_news_text
+from scrapers.yahoof_scraper    import get_yahoo_finance_news_rss,get_news_text, get_YYYY_MM_DD_yh
+from scrapers.investing_dot_com import get_investing_dot_com_news_rss, get_news_text_selenium, get_YYYY_MM_DD_idc
    
 class TestSentimentModel(unittest.TestCase):
     
@@ -146,8 +177,9 @@ class TestSentimentModel(unittest.TestCase):
         self.assertNotEqual(sm,None)
     
     '''
-    def test_score(self):
-        print("Start...")
+
+    def test_score_yahoo(self):
+        print("Start Yahoo ...")
         top_news = get_yahoo_finance_news_rss()
         sm = SentimentModel()
         acc_score = 0
@@ -156,14 +188,31 @@ class TestSentimentModel(unittest.TestCase):
             news_text = get_news_text(n[1])
             if(news_text is not None):
                 score = sm.get_sentiment_score(news_text)
-                print(f"------------ news {n[0]:s} , score = {score:.6f}")
+                ns = f"src:Yahoo Finance | news: {n[0]:s}| date: {get_YYYY_MM_DD_yh(n[2]):s}| score:{score:.6f}| news_text:{news_text:s}"
+                save_to_csv(ns)
                 acc_score += score
                 counter += 1
                 self.assertGreater(score,0) 
         print("Accumulated score {:.5f}".format((acc_score/counter)))
 
 
-            
+    def test_score_investing(self):
+        print("Start Investing.com ...")
+        top_news = get_investing_dot_com_news_rss()
+        sm = SentimentModel()
+        acc_score = 0
+        counter   = 0
+        for n in top_news:
+            news_text = get_news_text_selenium(n[1])
+            if(news_text is not None):
+                score = sm.get_sentiment_score(news_text)
+                ns = f"src: Inveting.com| news: {n[0]:s}| date: {get_YYYY_MM_DD_idc(n[2]):s}| score:{score:.6f}| news_text:{news_text:s}"
+                save_to_csv(ns)
+                acc_score += score
+                counter += 1
+                self.assertGreater(score,0) 
+        print("Accumulated score {:.5f}".format((acc_score/counter)))
+
 
 if __name__ == "__main__":
     unittest.main()

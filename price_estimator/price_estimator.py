@@ -4,12 +4,12 @@ Created on Nov 17, 2023
 @author: albertogallini
 '''
 
-
 from  const_and_utils import *
 from  sequential_model_1stock import SequentialModel1Stock
 from  sequential_model_1stock_and_rates import SequentialModel1StockAndRates
 from  sequential_model_1stock_multifactors import SequentialModel1StockMultiFactor
 from  sequential_model_3stock_multifactors import SequentialModel3StockMultiFactor
+from  transformer_model_1stock_multifactor import TransformerModel1StockMultiFactor
 
 import pandas as pd
 import numpy as np
@@ -103,6 +103,28 @@ def produce_distribution_pdf_from_file(input_data_dir: str):
     # Close the pdf
     pdf_pages.close()
 
+
+def get_market_sentiment_analysis_score():
+    from sentiment_model import SentimentModel
+    from scrapers import get_yahoo_finance_news_rss,get_news_text
+
+    print("Sampling news for sentiment analysis socre...")
+    top_news = get_yahoo_finance_news_rss()
+    sm = SentimentModel()
+    acc_score = 0
+    counter   = 0
+    for n in top_news:
+        news_text = get_news_text(n[1])
+        if(news_text is not None):
+            score = sm.get_sentiment_score(news_text)
+            print(f"------------ news {n[0]:s} , score = {score:.6f}")
+            acc_score += score
+            counter += 1
+    score = (acc_score/counter)
+    print("Accumulated score {:.5f}".format((score)))
+    return score
+
+
     
 def produce_estimate_price_distributions(ticker_list : list , input_data_dir: str, scenarios: int = 10, file_name_id: str ="", save_calibration : bool = False,  calibration_folder : str = None ):
     print(os.environ['PYTHONPATH'])
@@ -115,8 +137,8 @@ def produce_estimate_price_distributions(ticker_list : list , input_data_dir: st
         fprices = list()
         try:
             sm1s = SequentialModel1StockMultiFactor(input_data_price_csv = files[ticker_index],
-                                                    input_data_rates_csv = FOLDER_MARKET_DATA + FILE_NAME_RATES,
-                                                    input_fear_and_greed_csv = FOLDER_MARKET_DATA + FILE_NAME_FNG) 
+                                                     input_data_rates_csv = FOLDER_MARKET_DATA + FILE_NAME_RATES,
+                                                     input_fear_and_greed_csv = FOLDER_MARKET_DATA + FILE_NAME_FNG) 
         except Exception as e:
             print("Caught an exception: ", e)
             print("Error in generating model for " + files[ticker_index] )
@@ -143,7 +165,7 @@ def produce_estimate_price_distributions(ticker_list : list , input_data_dir: st
         if(len(fprices) > 0):           
             fprices.append(p_1)
         df = pd.DataFrame(fprices,columns=["prices"])
-        df.to_csv(output_data_dir+"est_prices_" + ticker_list[ticker_index] + ".csv")
+        df.to_csv(output_data_dir + PREFIX_ESTIMATED_PRICE + ticker_list[ticker_index] + ".csv")
 
     
 

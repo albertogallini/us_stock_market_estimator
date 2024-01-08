@@ -5,3 +5,4 @@ fine_tuned_sentiment_model
 multifactor_check.csv
 model.png
 *.log
+news_storage

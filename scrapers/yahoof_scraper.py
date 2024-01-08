@@ -30,6 +30,20 @@ def get_yahoo_finance_news_rss():
     return item_list
 
 
+def get_news_text(url):
+    response = requests.get(url)
+    if response.status_code == 200:
+        soup = BeautifulSoup(response.text, 'html.parser')
+        story_items = soup.find('div', class_='caas-body')
+        readable_text = ""
+        for item in story_items:
+            readable_text += item.get_text(separator='\n', strip=True)   
+        return readable_text
+    else:
+        print(f"Error response status code : {response.status_code}")
+        return None
+
+
 YAHOO_F_DATA_FILE_NAME_CSV = "scrapers/yahoo_finance_sentiment.csv"
 
 def generate_data_set_csv(item_list):
@@ -47,21 +61,16 @@ def generate_data_set_csv(item_list):
             a_row = row + ('neutral',)
             writer.writerow(a_row)    
 
+
+from datetime import datetime
+def get_YYYY_MM_DD_yh(date_string:str) -> datetime :
+    date_object = datetime.strptime(date_string, '%Y-%m-%dT%H:%M:%SZ')
+    print(date_object)
+    try:        
+        return date_object.strftime("%Y-%m-%d")
+    except ValueError:
+        raise ValueError("Invalid date format")
     
-
-def get_news_text(url):
-    response = requests.get(url)
-    if response.status_code == 200:
-        soup = BeautifulSoup(response.text, 'html.parser')
-        story_items = soup.find('div', class_='caas-body')
-        readable_text = ""
-        for item in story_items:
-            readable_text += item.get_text(separator='\n', strip=True)   
-        return readable_text
-    else:
-        print(f"Error response status code : {response.status_code}")
-        return None
-
  
 import unittest
 import logging  

@@ -59,6 +59,7 @@ class SequentialModel3StockMultiFactor(SequentialModel1StockMultiFactor):
                  lookback : int  = 14, 
                  epochs : int = 12,
                  training_percentage : float = 0.90,
+                 use_lstm : bool = False,
                  logger: logging.Logger = None ) :
         
         super().__init__(input_data_price_csv,
@@ -67,6 +68,7 @@ class SequentialModel3StockMultiFactor(SequentialModel1StockMultiFactor):
                        lookback,
                        epochs,
                        training_percentage,
+                       use_lstm,
                        logger)
         
         
@@ -105,7 +107,11 @@ class SequentialModel3StockMultiFactor(SequentialModel1StockMultiFactor):
         self.logger.info('RNN model ...')
 
         self.model = tf.keras.Sequential()
-        self.model.add(tf.keras.layers.LSTM(self.lookback * factor_num, activation='tanh',input_shape=(self.lookback, factor_num ))) #, recurrent_activation='sigmoid'))
+        if(self.use_lstm):
+            self.model.add(tf.keras.layers.LSTM(self.lookback * factor_num, activation='tanh',input_shape=(self.lookback, factor_num ))) 
+        else:
+            self.model.add(tf.keras.layers.SimpleRNN(self.lookback * factor_num, activation='tanh',input_shape=(self.lookback, factor_num ))) 
+
         self.model.add(tf.keras.layers.Dense(units = factor_num, 
                                              kernel_regularizer=regularizers.L1L2(l1=1e-4 * (-self.price_vol+1), l2=1e-4*(-self.price_vol+1)),
                                              bias_regularizer=regularizers.L2(1e-4),
