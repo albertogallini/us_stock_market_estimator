@@ -44,10 +44,18 @@ def append_today_date( input_folder_name: str) -> str:
  
 import pandas as pd    
 
+def calculate_ratio(val, prev_val):
+    return val / prev_val
+
+
 def fill_value(column_name: str , df: pd.DataFrame) -> pd.DataFrame:
     df[column_name] = df[column_name].replace(0., pd.NaT)
     df[column_name] = df[column_name].fillna(method='ffill')
-    return df                                         
+    return df    
+  
+def backfill_value(column_name: str , df: pd.DataFrame) -> pd.DataFrame:
+    df[column_name] = df[column_name].fillna(method='bfill')
+    return df                                       
 
 def create_instance_of_class(class_type, *args, **kwargs) -> object:
     return class_type(*args, **kwargs)

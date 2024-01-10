@@ -31,8 +31,12 @@ def show_prediction_vs_actual_mult(predictions : list, ticker:str, sm1s:Sequenti
         # Plot the actual prices and the predicted prices
         # plt.switch_backend('QtAgg')  # For QtAgg backend
         fig, axs = plt.subplots(2)
-        axs[0].plot(sm1s.test_time, sm1s.y_test, color='blue', label='Actual prices')
-         
+        if(sm1s.y_test.ndim > 1):
+            axs[0].plot(sm1s.test_time, sm1s.y_test[:,0], color='blue', label='Actual prices')
+        else:
+            axs[0].plot(sm1s.test_time, sm1s.y_test, color='blue', label='Actual prices')
+
+        
         for p in predictions:
             if (len(p[0]) > 1 ):
                 # Transpose the data to get a list of columns
@@ -59,6 +63,7 @@ def show_prediction_vs_actual_mult(predictions : list, ticker:str, sm1s:Sequenti
         
         
         for p in predictions:
+            
             if (len(p[0]) > 1 ):
                 # Transpose the data to get a list of columns
                 pt = p.T   
@@ -67,7 +72,7 @@ def show_prediction_vs_actual_mult(predictions : list, ticker:str, sm1s:Sequenti
                     pt[i] = np.roll(col, i)
                     pt[i][:i] = np.nan
                 for i, col in enumerate(pt):
-                    axs[1].scatter(sm1s.y_test, pt[i], color='red', s=2)
+                    axs[1].scatter(sm1s.y_test.T[0], pt[i], color='red', s=2)
             else:
                 axs[1].scatter(sm1s.y_test, p, color='red', s=2)
             

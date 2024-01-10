@@ -142,11 +142,11 @@ def save_to_csv(data):
         # Create the file if it doesn't exist
         with open(NEWS_DATA_FILE_NAME_CSV, 'w') as csvfile:
             writer = csv.writer(csvfile)
-            writer.writerow(['src', 'news', 'date', 'score', "news_text"])
+            writer.writerow(['src', 'news', 'Date', 'Scores', "news_text"])
     else: 
         news_df = pd.read_csv(NEWS_DATA_FILE_NAME_CSV)
         
-    # this is very inefficient. We should add an md5 as Key or however a unique numeri id to the news.
+    # !!! this is very inefficient !!!. We should add an md5 as Key or however a unique numeric id to the news.
     # I'm planning to store into a db going forward. For the moment this is fine.   
     with open('news_scores.csv', mode='a', newline='') as csvfile:
         writer = csv.writer(csvfile)
@@ -161,6 +161,7 @@ def save_to_csv(data):
 
 
 print("Data written to output.csv successfully!")
+
 
 
 import unittest
@@ -188,13 +189,12 @@ class TestSentimentModel(unittest.TestCase):
             news_text = get_news_text(n[1])
             if(news_text is not None):
                 score = sm.get_sentiment_score(news_text)
-                ns = f"src:Yahoo Finance | news: {n[0]:s}| date: {get_YYYY_MM_DD_yh(n[2]):s}| score:{score:.6f}| news_text:{news_text:s}"
+                ns = f"src:Yahoo Finance|news:{n[0]:s}|Date:{get_YYYY_MM_DD_yh(n[2]):s}|Scores:{score:.6f}|news_text:{news_text:s}"
                 save_to_csv(ns)
                 acc_score += score
                 counter += 1
                 self.assertGreater(score,0) 
         print("Accumulated score {:.5f}".format((acc_score/counter)))
-
 
     def test_score_investing(self):
         print("Start Investing.com ...")
@@ -206,12 +206,15 @@ class TestSentimentModel(unittest.TestCase):
             news_text = get_news_text_selenium(n[1])
             if(news_text is not None):
                 score = sm.get_sentiment_score(news_text)
-                ns = f"src: Inveting.com| news: {n[0]:s}| date: {get_YYYY_MM_DD_idc(n[2]):s}| score:{score:.6f}| news_text:{news_text:s}"
+                ns = f"src:Investing.com|news:{n[0]:s}|Date:{get_YYYY_MM_DD_idc(n[2]):s}|Scores:{score:.6f}|news_text:{news_text:s}"
                 save_to_csv(ns)
                 acc_score += score
                 counter += 1
                 self.assertGreater(score,0) 
+        
         print("Accumulated score {:.5f}".format((acc_score/counter)))
+        
+        
 
 
 if __name__ == "__main__":

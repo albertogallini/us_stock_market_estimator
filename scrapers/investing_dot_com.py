@@ -32,12 +32,12 @@ def get_investing_dot_com_news_rss():
         
         for item in items:
 
-            title = item.find('title').text
-            pub_date = item.find('pubdate').text
+            title = item.find('title').text.encode('ascii', 'ignore').decode()
+            pub_date = item.find('pubdate').text.encode('ascii', 'ignore').decode()
             pattern = re.compile(r'<link/>(.*?)</item>', re.DOTALL)
             match = pattern.search(str(item))
             if match:
-                link = match.group(1)
+                link = match.group(1).encode('ascii', 'ignore').decode()
             
             print(f"Title: {title}")
             print(f"Link: {link}")

@@ -6,3 +6,5 @@ multifactor_check.csv
 model.png
 *.log
 news_storage
+launch.json
+debug.csv
