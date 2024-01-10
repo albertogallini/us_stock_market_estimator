@@ -51,6 +51,14 @@ class TransformerModel1StockMultiFactor(SequentialModel1StockMultiFactor):
                        use_lstm,
                        logger)
         
+        if (self.df.empty):
+            self.logger.info('No Valid data')
+            return
+        
+        # input factor list redefinition. I'm inserting the Fear & Greed and Sentiment Scores in the time analysis. 
+        # Transformers should be smarter than RNN and LSTM by using the selfattention mechanism. 
+        self.calibration_factors_list = ['Close', 'Volume','3 Mo','1 Yr','5 Yr','10 Yr','Fear Greed','Scores'] + list(self.index_sub_sector_price.keys())
+        self.data           =  self.df[ self.calibration_factors_list ].values
         
     
     def calibrate_model (self):
@@ -147,10 +155,7 @@ class TransformerModel1StockMultiFactor(SequentialModel1StockMultiFactor):
         return 1
         
    
-                        
-        
-        
-        
+                           
 from tensorflow.keras.callbacks import EarlyStopping
 
 # Define your early stopping criteria
@@ -160,36 +165,20 @@ earlystop = EarlyStopping(monitor='loss',  # Quantity to be monitored.
                           verbose=1,  # Verbosity mode.
                           mode='auto')  # Direction of improvement is inferred        
         
-        
-   
-   
-
-def evaluate_ticker(input_file:str, calibrate: bool, scenario_id: int, model_date: str):
-    print("Calibrate SequentialModel1StockMultiFactor Model ...")
-    sm3s = TransformerModel1StockMultiFactor(input_data_price_csv = input_file,
-                                            input_data_rates_csv = FOLDER_MARKET_DATA+"/usd_rates.csv",
-                                            input_fear_and_greed_csv = FOLDER_MARKET_DATA+"/fear_and_greed.csv") 
-    
-    if calibrate:
-        sm3s.calibrate_model()
-    else:
-        sm3s.load_model(path=FOLDER_REPORD_PDF+model_date+"/", scenario_id=str(scenario_id))
-        
-    if (sm3s.model == None):
-        return None, None
-    ticker = get_ticker(input_file)
-    return ticker, sm3s 
     
     
-
 from sequential_model_1stock_multifactors import check_data_correlation,evaluate_ticker_distribution        
         
 def main():
     init_config()
     print("Running in one ticker mode")
+    input_file = PREFIX_PRICE_FETCHER + "PYPL" + ".csv"
     print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
-    check_data_correlation(FOLDER_MARKET_DATA+"price_fetcher_GOOGL.csv")
-    evaluate_ticker_distribution(TransformerModel1StockMultiFactor,FOLDER_MARKET_DATA+"price_fetcher_IONQ.csv", 20, calibrate = True, model_date= "18-12-2023_portfolio_calibration")
+    check_data_correlation(FOLDER_MARKET_DATA+input_file)
+    evaluate_ticker_distribution(TransformerModel1StockMultiFactor,
+                                 FOLDER_MARKET_DATA+input_file,
+                                 20,
+                                 calibrate = True)
 
     
 if __name__ == '__main__':  

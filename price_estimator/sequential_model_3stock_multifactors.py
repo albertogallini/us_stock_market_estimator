@@ -242,8 +242,7 @@ class SequentialModel3StockMultiFactor(SequentialModel1StockMultiFactor):
                 self.y_test      = (self.y_test      * self.price_denormalization_factor) + self.price_denormalization_sum 
                 self.predictions = (self.predictions * self.price_denormalization_factor) + self.price_denormalization_sum
         
-   
-                    
+              
         
 from tensorflow.keras.callbacks import EarlyStopping
 
@@ -254,36 +253,20 @@ earlystop = EarlyStopping(monitor='loss',  # Quantity to be monitored.
                           verbose=1,  # Verbosity mode.
                           mode='auto')  # Direction of improvement is inferred        
         
-        
-   
-   
 
-def evaluate_ticker(input_file:str, calibrate: bool, scenario_id: int, model_date: str):
-    print("Calibrate SequentialModel3StockMultiFactor Model ...")
-    sm3s = SequentialModel3StockMultiFactor(input_data_price_csv = input_file,
-                                            input_data_rates_csv = FOLDER_MARKET_DATA+"/usd_rates.csv",
-                                            input_fear_and_greed_csv = FOLDER_MARKET_DATA+"/fear_and_greed.csv") 
-    
-    if calibrate:
-        sm3s.calibrate_model()
-    else:
-        sm3s.load_model(path=FOLDER_REPORD_PDF+model_date+"/", scenario_id=str(scenario_id))
-        
-    if (sm3s.model == None):
-        return None, None
-    ticker = get_ticker(input_file)
-    return ticker, sm3s 
-    
-    
 
 from sequential_model_1stock_multifactors import check_data_correlation,evaluate_ticker_distribution        
         
 def main():
     init_config()
     print("Running in one ticker mode")
+    input_file = PREFIX_PRICE_FETCHER + "PYPL" + ".csv"
     print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
-    #check_data_correlation(FOLDER_MARKET_DATA+"price_fetcher_PYPL.csv")
-    evaluate_ticker_distribution(SequentialModel3StockMultiFactor,FOLDER_MARKET_DATA+"price_fetcher_PYPL.csv", 3, calibrate = True, model_date= "18-12-2023_portfolio_calibration")
+    check_data_correlation(FOLDER_MARKET_DATA+input_file)
+    evaluate_ticker_distribution(SequentialModel3StockMultiFactor,
+                                 FOLDER_MARKET_DATA+input_file,
+                                3, 
+                                calibrate = True)
 
     
 if __name__ == '__main__':  

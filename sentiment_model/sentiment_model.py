@@ -25,6 +25,7 @@ class TrainingDataSet(object):
             kstr = 'input'
         return kstr
     
+
     def get_training_model_values(self):
         from datasets import load_dataset
         kstr  = None
@@ -33,6 +34,7 @@ class TrainingDataSet(object):
         elif (self.training_model == "FinGPT" ):
             kstr = 'output',9
         return kstr
+    
     
     def string2int_value_mapping(self, string_value: str) -> str: 
          if (self.training_model == "eengel7" ):
@@ -195,6 +197,7 @@ class TestSentimentModel(unittest.TestCase):
                 counter += 1
                 self.assertGreater(score,0) 
         print("Accumulated score {:.5f}".format((acc_score/counter)))
+        
 
     def test_score_investing(self):
         print("Start Investing.com ...")

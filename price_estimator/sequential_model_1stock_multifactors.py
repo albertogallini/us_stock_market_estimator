@@ -140,7 +140,7 @@ class SequentialModel1StockMultiFactor(SequentialModel1StockAndRates):
         self.df[["Scores","Fear Greed","Scores_pxy"]].to_csv("debug.csv")
 
 
-        # inpout factor list:
+        # input factor list:
         self.calibration_factors_list = ['Close', 'Volume','3 Mo','1 Yr','5 Yr','10 Yr'] + list(self.index_sub_sector_price.keys())
         self.sentiment_factors_list   = ['Fear Greed','Scores'] 
 
@@ -390,7 +390,6 @@ def evaluate_ticker_distribution(class_type, input_file:str, scenarios: int = 10
     print("3 sigma: ", 3*std)        
     
     
-    
 def check_data_correlation(input_file:str, rates = True, indexes = False, fng = True):
     sm1s = SequentialModel1StockMultiFactor(input_data_price_csv = input_file,
                                             input_data_rates_csv = FOLDER_MARKET_DATA+FILE_NAME_RATES,
@@ -398,7 +397,7 @@ def check_data_correlation(input_file:str, rates = True, indexes = False, fng = 
     
     print (sm1s.df_not_normalized[['Close']].describe())
 
-
+    sm1s.df_not_normalized['rtn'] = sm1s.df_not_normalized['Close'].pct_change()
     if (rates):
         sm1s.df_not_normalized.plot(kind="scatter",  x="Close", y='3 Mo', color = "green")
         sm1s.df_not_normalized.plot(kind="scatter",  x="Close", y='4 Mo', color = "blue")
@@ -417,7 +416,7 @@ def check_data_correlation(input_file:str, rates = True, indexes = False, fng = 
     
     if(fng):
        sm1s.df_not_normalized.plot(kind="scatter",  x="Close", y='Fear Greed', color = "red")
-       sm1s.df_not_normalized.plot(kind="scatter",  x="Close", y='Scores', color = "red")
+       sm1s.df_not_normalized.plot(kind="scatter",  x="rtn", y='Scores', color = "red")
        sm1s.df_not_normalized.plot(kind="scatter",  x="Fear Greed", y='Scores', color = "red")
         
     plt.show()
@@ -426,10 +425,11 @@ def check_data_correlation(input_file:str, rates = True, indexes = False, fng = 
 def main():
     init_config()
     print("Running in one ticker mode")
+    input_file = PREFIX_PRICE_FETCHER + "PYPL" + ".csv"
     print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
-    #check_data_correlation(FOLDER_MARKET_DATA+"price_fetcher_IONQ.csv")
-    evaluate_ticker_distribution(SequentialModel1StockMultiFactor, FOLDER_MARKET_DATA + "price_fetcher_PYPL.csv",
-                                3,
+    check_data_correlation(FOLDER_MARKET_DATA+input_file)
+    evaluate_ticker_distribution(SequentialModel1StockMultiFactor, FOLDER_MARKET_DATA + input_file,
+                                10,
                                 calibrate = True,
                                 model_date= None)
    
