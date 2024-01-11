@@ -425,7 +425,7 @@ def check_data_correlation(input_file:str, rates = True, indexes = False, fng = 
 def main():
     init_config()
     print("Running in one ticker mode")
-    input_file = PREFIX_PRICE_FETCHER + "PYPL" + ".csv"
+    input_file = PREFIX_PRICE_FETCHER + "IONQ" + ".csv"
     print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
     check_data_correlation(FOLDER_MARKET_DATA+input_file)
     evaluate_ticker_distribution(SequentialModel1StockMultiFactor, FOLDER_MARKET_DATA + input_file,

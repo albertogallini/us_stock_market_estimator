@@ -96,7 +96,7 @@ def back_test(args: tuple):
                                           input_data_price_csv=input_file,
                                           input_data_rates_csv=FOLDER_MARKET_DATA+"/usd_rates.csv", 
                                           input_fear_and_greed_csv= FOLDER_MARKET_DATA+"/fear_and_greed.csv",
-                                          training_percentage=0.90) 
+                                          training_percentage=0.75) 
         if(calibration_folder == None):
             print("Calibrating the model ...")
             prediction_model.calibrate_model()
