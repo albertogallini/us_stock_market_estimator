@@ -71,7 +71,7 @@ class SequentialModel1StockMultiFactor(SequentialModel1StockAndRates):
         
         self.df_rates           = pd.read_csv(input_data_rates_csv)
         self.df_fear_and_greed  = pd.read_csv(input_fear_and_greed_csv)
-        self.sentiment_score    = pd.read_csv("news_scores.csv")[["Date","Scores"]].groupby('Date')['Scores'].mean().to_frame().reset_index()
+        self.sentiment_score    = pd.read_csv(FOLDER_MARKET_DATA+"news_scores.csv")[["Date","Scores"]].groupby('Date')['Scores'].mean().to_frame().reset_index()
         
         self.df = self.df.merge(self.df_rates, on='Date', how='left')
         self.df = self.df.merge(self.df_fear_and_greed, on='Date', how='left')

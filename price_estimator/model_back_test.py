@@ -30,7 +30,7 @@ def show_prediction_vs_actual_mult(predictions : list, ticker:str, sm1s:Sequenti
         # Assuming y_test and predictions are of the same length
         # Plot the actual prices and the predicted prices
         # plt.switch_backend('QtAgg')  # For QtAgg backend
-        fig, axs = plt.subplots(2)
+        fig, axs = plt.subplots(3)
         if(sm1s.y_test.ndim > 1):
             axs[0].plot(sm1s.test_time, sm1s.y_test[:,0], color='blue', label='Actual prices')
         else:
@@ -57,9 +57,12 @@ def show_prediction_vs_actual_mult(predictions : list, ticker:str, sm1s:Sequenti
                     else:
                         axs[0].plot(time, na, color="red")
             else:
+                axs[0].grid(which='both', linestyle='--')
                 axs[0].plot(sm1s.test_time, p, color='red', alpha = 0.5)
         
         axs[1].scatter(sm1s.y_test, sm1s.y_test, label='actual values', color='blue', s=2)
+        
+        
         
         
         for p in predictions:
@@ -75,6 +78,19 @@ def show_prediction_vs_actual_mult(predictions : list, ticker:str, sm1s:Sequenti
                     axs[1].scatter(sm1s.y_test.T[0], pt[i], color='red', s=2)
             else:
                 axs[1].scatter(sm1s.y_test, p, color='red', s=2)
+                
+                pp = []
+                for pr in p:
+                    pp.append(pr[0])
+                df = pd.DataFrame({ 'Distance':abs(sm1s.y_test- pp)/pp})
+                thresholds = np.arange(0.0,0.2,0.0001)
+                percentages = []
+                for threshold in thresholds:
+                    below_threshold_mask = df['Distance'] < threshold
+                    below_threshold = df[below_threshold_mask]
+                    percentages.append(below_threshold.shape[0]/ df.shape[0])
+                axs[2].grid(which='both', linestyle='--')
+                axs[2].plot(thresholds,percentages)
             
         axs[0].set_title('Actual vs Predicted Prices ' + str(ticker) )     
         axs[0].set_xticklabels(sm1s.test_time,fontsize=5, rotation = 90)
