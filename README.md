@@ -6,25 +6,28 @@ pretrained Distil-Bert fined tuned on FinGPT dataset from HuggingFace.<br>
 
 
 ![plot](./imgs/arch_d.png?raw=true)
+<p style="text-align: center;"><b>fig.1</b></p>
 
 ## Models 
 There are two basics model based on Dense layer, which use few factors:
-1. Sequential Model 1 (price) Stock
-2. Sequential Model 1 (price) Stock and rates 
+1. Sequential Model 1 (price) Stock: this uses only prices and volumes.
+2. Sequential Model 1 (price) Stock and Rates: this uses prices, volumes and rates.
 
 Those are just internal and not really interesting. They are simple multilayer perceptron 
 Then there are two other models that can be used to actual price estimate: 
 
-1. Sequential 1 (price) Stock Multifactor, plus its 3 prices estimate version 
-2. Transformer 1 (price) Stock Multifactor
+3. Sequential 1 (price) Stock Multifactor, plus a 3 prices estimate version: this is the model describe in the opening <b>fig. 1.</b>
+4. Transformer 1 (price) Stock Multifactor : this is a model based on trasformers and the same input of the previous one
+
+Model #3 can also be run using LSTM in place of RNN, but tests show RNN produce closer to actual results. 
 
 ### How to use the models
 
-...
+### TODO ...
 
 ### How to fetch the data 
 
-...
+### TODO ..
 
 
 ## Sentiment Analysis
@@ -51,7 +54,14 @@ the file [config.json](./config.json) contains few info about the file location 
 This is an example of a Sequential model mergin a RNN for historical factors and a Dense layer that combine the output of the RNN with the sentiment analysis data<br>
 ![Alt text](./imgs/back_test.png?width=250&height=150)
 
+This is an example of a Sequential model mergin a LSTM for historical factors and a Dense layer that combine the output of the RNN with the sentiment analysis data<br>
+![Alt text](./imgs/back_test_lstm.png?width=250&height=150)
+
 This is an example of a Transformer getting as input both historical factors and sentiment historical data.<br>
 ![Alt text](./imgs/back_test_t.png?width=250&height=150)
 <br>
-As you can see RNN + Dense model performs better than the Transformer one. This is also confirmed in [this paper](./docs/1.pdf)
+As you can see RNN + Dense model performs better than the LSTM and Transformer one. This is also confirmed in [this paper](./docs/1.pdf). 
+LSTM show a consistent underestimation in this example, while Transformes are more affected by the typcal 1-day shift on the historical series estimation.<br> 
+This effect is quite frequent as the previous day value is a good esitimator of the current day value ( meaning the correlation betwenn the current day price and 
+the yesterday price si very high).
+Sentiment Analysis and rates change have the purpouse to reduce the similarity with the previous day price that mis induced as (over-fitting) effect of the training. 
