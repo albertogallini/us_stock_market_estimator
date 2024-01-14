@@ -48,6 +48,12 @@ the file [config.json](./config.json) contains few info about the file location 
 
 ## Tools: 
 ### back_test.py: 
+This is an example of a Sequential model mergin a RNN for historical facotrs and a Dense layer that compine the output of the RNN with the sentiment analysis data
 ![Alt text](./imgs/back_test.png?width=250&height=150)
+
+This is an example of a Transformer getting as input both historical factors and sentiment historical data. 
+![Alt text](./imgs/back_test_t.png?width=250&height=150)
+
+As you can see RNN + Dense model perform better than the Transformer one. This is also confirmed in
 
 
