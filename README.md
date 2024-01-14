@@ -48,10 +48,10 @@ the file [config.json](./config.json) contains few info about the file location 
 
 ## Tools: 
 ### back_test.py: 
-This is an example of a Sequential model mergin a RNN for historical factors and a Dense layer that combine the output of the RNN with the sentiment analysis data
+This is an example of a Sequential model mergin a RNN for historical factors and a Dense layer that combine the output of the RNN with the sentiment analysis data<br>
 ![Alt text](./imgs/back_test.png?width=250&height=150)
 
-This is an example of a Transformer getting as input both historical factors and sentiment historical data. 
+This is an example of a Transformer getting as input both historical factors and sentiment historical data.<br>
 ![Alt text](./imgs/back_test_t.png?width=250&height=150)
-
-As you can see RNN + Dense model performs better than the Transformer one. This is also confirmed in [this paper]("./docs/Time Series Dense Encoder.pdf")
+<br>
+As you can see RNN + Dense model performs better than the Transformer one. This is also confirmed in [this paper](./docs/1.pdf)
