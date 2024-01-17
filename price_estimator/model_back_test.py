@@ -23,6 +23,49 @@ import logging
 import os
 
 
+def show_prediction_vs_actual_pdf(predictions : list, scenarios: int, models:list):
+    from matplotlib.backends.backend_pdf import PdfPages
+    from const_and_utils import FOLDER_REPORD_PDF
+    pdf_pages = PdfPages(FOLDER_REPORD_PDF+'back_tester_batch.pdf')
+
+    num_charts_per_page = 4
+    num_pages = (len(predictions) // scenarios) // num_charts_per_page + 1
+    for page in range(num_pages): # pages
+        fig, ax = plt.subplots(2, num_charts_per_page // 2)
+        for canvas in range(0, num_charts_per_page): # chart per page
+            for s in range(scenarios): # scenario per chart 
+                p_index  = (page*num_charts_per_page*scenarios)+(canvas*scenarios)+s   
+                if p_index < len(predictions):
+                    p = predictions[p_index]
+                    pp = []
+                    for pr in p:
+                        pp.append(pr[0])
+                    df = pd.DataFrame({ 'Distance':abs(models[p_index].y_test- pp)/pp})
+                    thresholds = np.arange(0.0,0.2,0.0001)
+                    percentages = []
+                    for threshold in thresholds:
+                        below_threshold_mask = df['Distance'] < threshold
+                        below_threshold = df[below_threshold_mask]
+                        percentages.append(below_threshold.shape[0]/ df.shape[0])
+                    ax[canvas % 2, canvas // 2].grid(which='both', linestyle='--')
+                    ax[canvas % 2, canvas // 2].plot(thresholds,percentages, alpha = 0.7)
+                    ax[canvas % 2, canvas // 2].fill_between(thresholds, 0, percentages)
+                    ax[canvas % 2, canvas // 2].set_title("'{} est. error < %' dist. density. Price vol = {:.2f} , Actual lookback = {}".format(models[p_index].ticker,models[p_index].df['Close'].std(),models[p_index].lookback), fontsize=3)
+                    x_labels =  ax[canvas % 2, canvas // 2].get_xticks().tolist()
+                    x_labels = [ "{:.2f}".format(x) for x in x_labels]
+                    ax[canvas % 2, canvas // 2].set_xticklabels(x_labels,fontsize=3)
+                    y_labels =  ax[canvas % 2, canvas // 2].get_yticks().tolist()
+                    y_labels = [ "{:.2f}".format(y) for y in y_labels]
+                    ax[canvas % 2, canvas // 2].set_yticklabels(y_labels,fontsize=3)
+                else:
+                    continue
+        pdf_pages.savefig(fig)
+        plt.close(fig)
+                
+    # Close the pdf
+    pdf_pages.close()
+
+
 def show_prediction_vs_actual_mult(predictions : list, ticker:str, sm1s:SequentialModel1Stock):
         from matplotlib.ticker import FixedLocator
         import matplotlib.colors as mcolors
@@ -58,7 +101,7 @@ def show_prediction_vs_actual_mult(predictions : list, ticker:str, sm1s:Sequenti
                         axs[0].plot(time, na, color="red")
             else:
                 axs[0].grid(which='both', linestyle='--')
-                axs[0].plot(sm1s.test_time, p, color='red', alpha = 0.5)
+                axs[0].plot(sm1s.test_time, p, alpha = 0.7)
         
         axs[1].scatter(sm1s.y_test, sm1s.y_test, label='actual values', color='blue', s=2)
         
@@ -90,7 +133,9 @@ def show_prediction_vs_actual_mult(predictions : list, ticker:str, sm1s:Sequenti
                     below_threshold = df[below_threshold_mask]
                     percentages.append(below_threshold.shape[0]/ df.shape[0])
                 axs[2].grid(which='both', linestyle='--')
-                axs[2].plot(thresholds,percentages)
+                axs[2].plot(thresholds,percentages, alpha = 0.7)
+                axs[2].fill_between(thresholds, 0, percentages)
+                axs[2].set_title("'est. error < %' dist. density. Price vol = {:.2f} , Actual lookback = {}".format(sm1s.df['Close'].std(),sm1s.lookback))
             
         axs[0].set_title('Actual vs Predicted Prices ' + str(ticker) )     
         axs[0].set_xticklabels(sm1s.test_time,fontsize=5, rotation = 90)
@@ -124,14 +169,15 @@ def back_test(args: tuple):
             return None, None
         
         prediction_model.plot_model()
+        prediction_model.compute_predictions(denormalize = True)
+
+        return prediction_model.predictions, prediction_model
 
     except Exception as e:
             print("Caught an exception: ", e)
             print("Error in calibrating model for " + input_file )
         
-    prediction_model.compute_predictions(denormalize = True)
-    return prediction_model.predictions, prediction_model
-
+    
 
 
 
@@ -146,27 +192,47 @@ def main():
     model_class = get_model_class(None)
 
     if len(sys.argv) > 2:
-        try:
-
+        # try:
             from multiprocessing import Pool
-            file_name = FOLDER_MARKET_DATA + PREFIX_PRICE_FETCHER + sys.argv[1] +".csv"
-            print("Processing " + file_name  + "\n")
+            subject = sys.argv[1]
+            if subject.endswith(".json"):
+                import json
+                with open(subject, 'r') as f:
+                    data = json.load(f)
+                    params = []
+                    for item in data:
+                        stocks = item['stocks']
+                        for ticker in stocks: 
+                            params = list(params + [ (FOLDER_MARKET_DATA + PREFIX_PRICE_FETCHER + ticker+".csv", None, i , model_class) 
+                                        for i in range(int(sys.argv[2])) ] )
+                    with Pool(processes = 3) as pool:
+                        print(params)
+                        results = pool.map(back_test, params)
+                        results = [r  for r in results if r != None]
+                        predictions, models = zip(*results) 
+
+                    show_prediction_vs_actual_pdf(predictions, int(sys.argv[2]), models)
+
+            else:
+                file_name = FOLDER_MARKET_DATA + PREFIX_PRICE_FETCHER + subject +".csv"
+                print("Processing " + file_name  + "\n")
+               
+                if len(sys.argv) > 3:
+                    model_class = get_model_class(sys.argv[3])
+
+                with Pool(processes = 3) as pool: 
+                    params = [(file_name, None, i, model_class) for i in range(int(sys.argv[2]))]
+                    print(params)
+                    results = pool.map(back_test, params)
+                    predictions, model = zip(*results)
+                    show_prediction_vs_actual_mult(predictions,get_ticker(file_name),model[0])
             
-            if len(sys.argv) > 3:
-                model_class = get_model_class(sys.argv[3])
+            
 
-            with Pool(processes = 5) as pool: 
-                params = [(file_name, None, i,model_class) for i in range(int(sys.argv[2]))]
-                print(params)
-                results = pool.map(back_test, params)
-                predictions, sm1s = zip(*results)
-                show_prediction_vs_actual_mult(predictions,get_ticker(file_name),sm1s[0])
+        # except Exception as e:
+        #     print("Caught an exception: ", e)
+        #     print("Error : " + sys.argv[1] )
 
-        except Exception as e:
-            print("Caught an exception: ", e)
-            print("Error : " + file_name )
-        
-       
     else:
         print("Missing input ticker")
                 

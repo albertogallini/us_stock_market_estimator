@@ -229,7 +229,7 @@ class SequentialModel3StockMultiFactor(SequentialModel1StockMultiFactor):
             x_sentiment_train     = np.reshape(x_sentiment_train, (x_sentiment_train.shape[0], x_sentiment_train.shape[2]))
             self.x_sentiment_test = np.reshape(self.x_sentiment_test, (self.x_sentiment_test.shape[0], self.x_sentiment_test.shape[2]))
 
-            self.train_time, self.test_time = self.time[:train_size], self.time[train_size+self.lookback+self.__OUTPUT_SERIES_NUMBER:]
+            self.train_time, self.test_time = self.time[:train_size], self.time[train_size+self.lookback: -self.__OUTPUT_SERIES_NUMBER]
             # Generate prediction
             self.predictions = np.reshape(self.model.predict([self.x_test, self.x_sentiment_test]), (len(self.y_test), self.__OUTPUT_SERIES_NUMBER))
 

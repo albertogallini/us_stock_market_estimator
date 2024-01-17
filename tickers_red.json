@@ -1,0 +1,14 @@
+[
+    {
+        "stocks": ["IONQ","UFPT","NVTS"],
+        "id": "1"
+    },
+    {
+        "stocks": ["META","PFIE","GOOGL"],
+        "id": "2"
+    },
+    {
+        "stocks": ["WM","HEI","DDOG"],
+        "id": "3"
+    }
+]

@@ -108,10 +108,10 @@ class SequentialModel1StockMultiFactor(SequentialModel1StockAndRates):
         self.df = fill_value('Fear Greed',self.df)
 
          # clean up Scores data :
-        self.df['Scores_pxy'] = (self.df['Fear Greed'].pct_change() + 1)  * 0.5 # some recaling is needed to makes inferred valuea comparable to the actual ones.
+        self.df['Scores_pxy'] = (self.df['Fear Greed'].pct_change() + 1)  * 0.5 # some recaling is needed to makes inferred value comparable to the actual ones.
         self.df['Scores_pxy'] = self.df['Scores_pxy'].apply(lambda x :  x if abs(x) < 1 else 0.5)
         self.df['Scores'].fillna(self.df['Scores_pxy'], inplace=True)
-        self.df['Scores'] = self.df['Scores']
+        self.df['Scores'] = self.df['Scores'] * 100
    
         self.price_denormalization_factor = ( self.df['Close'].max() -  self.df['Close'].min() ) 
         self.price_denormalization_sum    =   self.df['Close'].min()
@@ -131,6 +131,7 @@ class SequentialModel1StockMultiFactor(SequentialModel1StockAndRates):
 
 
         self.df['Fear Greed'] = (( self.df['Fear Greed'] -  self.df['Fear Greed'].min())   / ( self.df['Fear Greed'].max()  -  self.df['Fear Greed'].min()))  * 1
+        self.df['Scores'] = (( self.df['Scores'] -  self.df['Scores'].min())   / ( self.df['Scores'].max()  -  self.df['Scores'].min()))  * 1
         
 
         for k in self.index_sub_sector_price.keys():
@@ -429,7 +430,7 @@ def main():
     print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
     check_data_correlation(FOLDER_MARKET_DATA+input_file)
     evaluate_ticker_distribution(SequentialModel1StockMultiFactor, FOLDER_MARKET_DATA + input_file,
-                                10,
+                                1,
                                 calibrate = True,
                                 model_date= None)
    

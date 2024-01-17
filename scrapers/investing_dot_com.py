@@ -66,12 +66,14 @@ def get_news_text_selenium(url):
     soup = BeautifulSoup(htmlp, "html.parser")
         
     story_items = soup.find('div', class_='WYSIWYG articlePage')
-    story_items = filter(lambda x: x.name == 'p', story_items)
-    readable_text = ""
-    for item in story_items:
-        readable_text += re.sub("<[^>]*>", "",(item.get_text(separator='\n', strip=True)))
+    if(story_items != None):
+        story_items = filter(lambda x: x.name == 'p', story_items)
+        readable_text = ""
+        for item in story_items:
+            readable_text += re.sub("<[^>]*>", "",(item.get_text(separator='\n', strip=True)))
 
-    return readable_text
+        return readable_text
+    pass
 
 from datetime import datetime
 def get_YYYY_MM_DD_idc(date_string:str) -> datetime :
