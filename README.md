@@ -135,7 +135,7 @@ user@myserver path
 $ python quality_checker.py 2024-01-12
 ```
 <br><br>
-and return a chart that can be zoomed in and out. of actual vs estiamte pluse the 1,2,3 sigma areas.  Additionally return the ditribution of the difference between 
+and returns a chart that can be zoomed in and out of actual vs estiamte pluse the 1,2,3 sigma areas.  Additionally return the ditribution of the difference between 
 the estimate return and the real return on %. See picture below:<br>
 ![Alt text](./imgs/quality_checker.png?width=250&height=150)
 
