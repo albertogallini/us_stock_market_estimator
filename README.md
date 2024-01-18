@@ -46,10 +46,29 @@ Sentiment data, i.e. news are fetched throug web scarpers by using BeautifulSoup
 
 
 ## 3. Folder configurations
-
+The folder configuration is set in the [config.json](./config.json) file :
+```
+{
+    "FOLDER_MARKET_DATA": "/Volumes/data/",
+    "FOLDER_REPORD_PDF": "/Volumes/reports/"
+}
+```
+These entries specifies where to get the data and where to store the output report. The data location must be accessible from every Dask worker (e.g.: a shared folder on a local network).
+The report folder has to be accessible only from the node the task is launched. 
 
 ### How to use the models
-### TODO ...
+The Sequential 1 (price) Stock Multifactor is the only one you can use as real estimator by using [price_estimator.py](./price_estimator/price_estimator.py).
+Even if you can modify the code to use other models. To  trigger the report generation type:
+```
+python price_estimator.py
+```
+This is based on Dask. So you have to have run a dask scheduler and at least a worker on the same machine. The report generator create 50 scenarios (i.e. calibration/training)
+for each ticker in the [ticker.json](./tickers.json) file. So it could be very expensive computation. It is highly recomended to have at least 8 workers having 4 GiB each. 
+It is not necesssary to have more than 1 thread per worker. 
+
+All the other models are accessible by the back_tester tool (see "Tool" section).
+
+
 
 
 
@@ -67,7 +86,19 @@ Eengel7 is very small dataset and can be used to quickly fine tune Distil-BERT a
 <br> 
 
 ### How to train the Sentiment Analysis model (Distil-Bert)
-### TODO ...
+Sentiment model is not exposed as a tool but there are test-units in [sentiment_model.py](./sentiment_model/sentiment_model.py#175).
+Throgh those test units you can fine tune, by removing the comment to:<br>
+```
+def test_fine_tune(self)
+```
+or start generating your own sentiments scores by<br>
+
+```
+def test_score_yahoo(self)
+def test_score_investing(self)
+```
+It is straightforward, looking at these methods to add additional soruce. Also adding additional fine tune dataset should be quite easy.
+Every contribution here is welcome. The better and more data we have the better the sentiment analysis is. 
 
 
 

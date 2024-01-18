@@ -430,7 +430,7 @@ def main():
     print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
     check_data_correlation(FOLDER_MARKET_DATA+input_file)
     evaluate_ticker_distribution(SequentialModel1StockMultiFactor, FOLDER_MARKET_DATA + input_file,
-                                1,
+                                50,
                                 calibrate = True,
                                 model_date= None)
    

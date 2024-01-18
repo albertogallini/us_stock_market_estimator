@@ -1,6 +1,4 @@
 {
-    "FOLDER_PREFIX_DISTRIBUTION_CSV": "/Volumes/reports/distributions__",
-    "PREFIX_PRICE_FETCHER": "price_fetcher_",
     "FOLDER_MARKET_DATA": "/Volumes/data/",
     "FOLDER_REPORD_PDF": "/Volumes/reports/"
 }
