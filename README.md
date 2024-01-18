@@ -81,10 +81,21 @@ the file [config.json](./config.json) contains few info about the file location 
 
 
 ## Tools: 
+
 ### back_test.py: 
 This is an example of a Sequential model mergin a RNN for historical factors and a Dense layer that combine the output of the RNN with the sentiment analysis data<br>
 ![Alt text](./imgs/back_test.png?width=250&height=150)
+you can run it by the following command
+<br><br>
 
+``` 
+user@myserver path  
+$ python back_tester.py IONQ 5 S1SMF
+```
+<br><br>
+Where ```IONQ``` is the ticker, ```5``` is the number of scenarios, ```S1DMF``` is the model name. To check the list of the model name 
+look at [const_and_utils.py](./price_estimator/const_and_utils.py#63)<br><br>
+<br>
 This is an example of a Sequential model mergin a LSTM for historical factors and a Dense layer that combine the output of the RNN with the sentiment analysis data<br>
 ![Alt text](./imgs/back_test_lstm.png?width=250&height=150)
 
@@ -102,5 +113,32 @@ As shoed in this [report](./docs/back_tester_batch.pdf). Here below a simple pag
 ![Alt text](./imgs/back_test_mult.png?width=250&height=150)
 <br>
 The report has been built trainig the model multiple times. Each curve show the probabilty density for each calibration.  It easy to see there are good calibrations and less good calibrations. 
+To run the report you can can use the following command
+<br><br>
+
+``` 
+user@myserver path  
+$ python back_tester.py ticker.json 5 S1SMF
+```
+<br><br>
+
+
+### quality_checker.py: 
+This tool compare the estimate of day t for t+1 with the actuals and offer an overall evaulation of the estimate done on day t. 
+The tool assume on both day t and t+1 the price_estimator report has been generated. Additionally the ticker set might change between t and t+1
+so the tool check only the tickers that are evaluated both at t and t+1.<br>
+The tool gets in input the day t, e.g.: 
+<br><br>
+
+``` 
+user@myserver path  
+$ python quality_checker.py 2024-01-12
+```
+<br><br>
+and return a chart that can be zoomed in and out. of actual vs estiamte pluse the 1,2,3 sigma areas.  Additionally return the ditribution of the difference between 
+the estimate return and the real return on %. See picture below:<br>
+![Alt text](./imgs/quality_checker.png?width=250&height=150)
+
+
 
 
