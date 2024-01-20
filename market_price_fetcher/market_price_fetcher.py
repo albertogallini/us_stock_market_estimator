@@ -45,21 +45,24 @@ class  NSYETickers:
     def __init__(self):
         self.url = self.NYSE_TICKER_URL
     
-    
     def fetch(self):
-        package = Package(self.url)
+        try:
+            package = Package(self.url)
         
-        nyse_tickers = list()
-        # print list of all resources:
-        print(package.resource_names)
-        
-        # print processed tabular data (if exists any)
-        for resource in package.resources:
-            if resource.descriptor['datahub']['type'] == 'derived/csv':
-                for t in  resource.read('nyse-listed_csv'):
-                    nyse_tickers.append(t[0])
-                
-        return nyse_tickers
+            nyse_tickers = list()
+            # print list of all resources:
+            print(package.resource_names)
+            
+            # print processed tabular data (if exists any)
+            for resource in package.resources:
+                if resource.descriptor['datahub']['type'] == 'derived/csv':
+                    for t in  resource.read('nyse-listed_csv'):
+                        nyse_tickers.append(t[0])
+            return nyse_tickers
+        except:
+            print("Datahub.io is down. Using static list")
+            return list(pd.read_csv(FOLDER_MARKET_DATA+"static_tickers_list.csv")['Ticker'].values)
+
     
 class NasdaqTickers():
     
@@ -194,34 +197,46 @@ def fulldump(start_date: str, end_date: str, limit = -1):
     nyset =  NSYETickers()
     nyse_tickers = nyset.fetch()
     for t in nyse_tickers:
-        bf = BatchFetcher (period = '1d', start=start_date, end=end_date)
-        bf.fetch(ticker = t, logger = logger)
-        index +=1
-        if limit > 0 and index > limit:
-            print("Reached Limit: " + str(limit))
-            break
+        try:
+            bf = BatchFetcher (period = '1d', start=start_date, end=end_date)
+            bf.fetch(ticker = t, logger = logger)
+            index +=1
+            if limit > 0 and index > limit:
+                print("Reached Limit: " + str(limit))
+                break
+        except Exception as e:
+            print(" full dump ticker {} : {} ".format(t, e))
+            continue
         
     logger.info('Fetching NASDAQ ticker from ')
     nasdaqt =  NasdaqTickers()
     nasdaq_tickers = nasdaqt.fetch()
     for t in nasdaq_tickers:
-        bf = BatchFetcher (period = '1d', start=start_date, end=end_date)
-        bf.fetch(ticker = t, logger = logger)
-        index +=1
-        if limit > 0 and index > limit:
-            print("Reached Limit: " + str(limit))
-            break
+        try:
+            bf = BatchFetcher (period = '1d', start=start_date, end=end_date)
+            bf.fetch(ticker = t, logger = logger)
+            index +=1
+            if limit > 0 and index > limit:
+                print("Reached Limit: " + str(limit))
+                break
+        except Exception as e:
+            print(" full dump ticker {} : {} ".format(t, e))
+            continue
    
     logger.info('Fetching SPX ticker from ')
     spxt =  SP500Tickers()
     spx_tickers = spxt.fetch()
     for t in spx_tickers:
-        bf = BatchFetcher (period = '1d', start=start_date, end=end_date)
-        bf.fetch(ticker = t, logger = logger)
-        index +=1
-        if limit > 0 and index > limit:
-            print("Reached Limit: " + str(limit))
-            break
+        try:
+            bf = BatchFetcher (period = '1d', start=start_date, end=end_date)
+            bf.fetch(ticker = t, logger = logger)
+            index +=1
+            if limit > 0 and index > limit:
+                print("Reached Limit: " + str(limit))
+                break
+        except Exception as e:
+            print(" full dump ticker {} : {} ".format(t, e))
+            continue
       
     
     logger.info("Fetching prices done.")
@@ -235,22 +250,34 @@ def update(start_date: str, end_date: str , logger:logging.Logger):
     nyset =  NSYETickers()
     nyse_tickers = nyset.fetch()
     for t in nyse_tickers:
-        bf = BatchFetcherAppend (period = '1d', start=start_date, end=end_date)
-        bf.fetch(ticker = t, logger = logger)
+        try:
+            bf = BatchFetcherAppend (period = '1d', start=start_date, end=end_date)
+            bf.fetch(ticker = t, logger = logger)
+        except Exception as e:
+            print(" update ticker {} : {} ".format(t, e))
+            continue
     
     logger.info('Updating NASDAQ ticker from ')
     nasdaqt =  NasdaqTickers()
     nasdaq_tickers = nasdaqt.fetch()
     for t in nasdaq_tickers:
-        bf = BatchFetcherAppend (period = '1d', start=start_date, end=end_date)
-        bf.fetch(ticker = t, logger = logger)
+        try:
+            bf = BatchFetcherAppend (period = '1d', start=start_date, end=end_date)
+            bf.fetch(ticker = t, logger = logger)
+        except Exception as e:
+            print(" update ticker {} : {} ".format(t, e))
+            continue
    
     logger.info('Updating SPX ticker from ')
     spxt =  SP500Tickers()
     spx_tickers = spxt.fetch()
     for t in spx_tickers:
-        bf = BatchFetcherAppend (period = '1d', start=start_date, end=end_date)
-        bf.fetch(ticker = t, logger = logger)
+        try:
+            bf = BatchFetcherAppend (period = '1d', start=start_date, end=end_date)
+            bf.fetch(ticker = t, logger = logger)
+        except Exception as e:
+            print(" update ticker {} : {} ".format(t, e))
+            continue
         
     
     
