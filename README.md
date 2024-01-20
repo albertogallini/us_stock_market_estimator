@@ -54,7 +54,8 @@ The folder configuration is set in the [config.json](./config.json) file :
 }
 ```
 These entries specifies where to get the data and where to store the output report. The data location must be accessible from every Dask worker (e.g.: a shared folder on a local network).
-The report folder has to be accessible only from the node the task is launched. 
+The report folder has to be accessible only from the node the task is launched. <br>
+<i>Make sure to copy [static_tickers.list.csv](./static_tickers_list.csv) into your FOLDER_MARKET_DATA.</i>
 
 ### How to use the models
 The Sequential 1 (price) Stock Multifactor is the only one you can use as real estimator by using [price_estimator.py](./price_estimator/price_estimator.py).
