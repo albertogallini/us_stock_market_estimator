@@ -132,7 +132,8 @@ class SentimentModel(object):
         return sentiment_score
 
         
-    
+from  price_estimator.const_and_utils import FOLDER_MARKET_DATA
+
 NEWS_DATA_FILE_NAME_CSV  =  'news_scores.csv'
 def save_to_csv(data):
     import csv,os,pandas as pd
@@ -150,7 +151,7 @@ def save_to_csv(data):
         
     # !!! this is very inefficient !!!. We should add an md5 as Key or however a unique numeric id to the news.
     # I'm planning to store into a db going forward. For the moment this is fine.   
-    with open('news_scores.csv', mode='a', newline='') as csvfile:
+    with open(NEWS_DATA_FILE_NAME_CSV, mode='a', newline='') as csvfile:
         writer = csv.writer(csvfile)
         src, news, date, score, news_text = data.split('|')
         if ( news_df.empty 
@@ -160,9 +161,6 @@ def save_to_csv(data):
              writer.writerow([src.split(':')[1],news.split(':')[1], date.split(':')[1], score.split(':')[1],news_text.split(':')[1]])
         else: 
             print("Duplicated news : {}".format(news.split(':')[1]))
-
-
-print("Data written to output.csv successfully!")
 
 
 
@@ -175,8 +173,9 @@ from scrapers.investing_dot_com import get_investing_dot_com_news_rss, get_news_
 class TestSentimentModel(unittest.TestCase):
     
     '''
+    # this is commented as it redefine the calibration. 
     def test_fine_tune(self):
-        sm = SentimentModel(fine_tune=True, training_model = 'FinGPT')
+        sm = SentimentModel(fine_tune=True, training_model = 'eengel7')
         self.assertNotEqual(sm,None)
     
     '''
@@ -197,6 +196,8 @@ class TestSentimentModel(unittest.TestCase):
                 counter += 1
                 self.assertGreater(score,0) 
         print("Accumulated score {:.5f}".format((acc_score/counter)))
+        import os
+        os.system('cp {} {}'.format(NEWS_DATA_FILE_NAME_CSV,FOLDER_MARKET_DATA+NEWS_DATA_FILE_NAME_CSV))
         
 
     def test_score_investing(self):
@@ -216,9 +217,53 @@ class TestSentimentModel(unittest.TestCase):
                 self.assertGreater(score,0) 
         
         print("Accumulated score {:.5f}".format((acc_score/counter)))
-        
-        
+        import os
+        os.system('cp {} {}'.format(NEWS_DATA_FILE_NAME_CSV,FOLDER_MARKET_DATA+NEWS_DATA_FILE_NAME_CSV))
+
 
 
 if __name__ == "__main__":
-    unittest.main()
+
+    import sys
+    if (len(sys.argv) > 2) :
+
+        if (sys.argv[2] == "test_unit"):
+            unittest.main()
+        elif(sys.argv[2] == "fine_tune"):
+            sm = SentimentModel(fine_tune=True, training_model = 'FinGPT')
+        else:
+            print("{} is not a valid value".format(sys.argv[2]))
+
+    else:
+
+        sm = SentimentModel()
+        acc_score = 0
+        counter   = 0
+
+        print("Start Yahoo ...")
+        top_news = get_yahoo_finance_news_rss()
+        for n in top_news:
+            news_text = get_news_text(n[1])
+            if(news_text is not None):
+                score = sm.get_sentiment_score(news_text)
+                ns = f"src:Yahoo Finance|news:{n[0]:s}|Date:{get_YYYY_MM_DD_yh(n[2]):s}|Scores:{score:.6f}|news_text:{news_text:s}"
+                save_to_csv(ns)
+                acc_score += score
+                counter += 1
+
+        print("Start Investing.com ...")
+        top_news = get_investing_dot_com_news_rss()
+        sm = SentimentModel()
+        for n in top_news:
+            news_text = get_news_text_selenium(n[1])
+            if(news_text is not None):
+                score = sm.get_sentiment_score(news_text)
+                ns = f"src:Investing.com|news:{n[0]:s}|Date:{get_YYYY_MM_DD_idc(n[2]):s}|Scores:{score:.6f}|news_text:{news_text:s}"
+                save_to_csv(ns)
+                acc_score += score
+                counter += 1
+        
+        print("Accumulated score {:.5f}".format((acc_score/counter)))
+       
+        import os
+        os.system('cp {} {}'.format(NEWS_DATA_FILE_NAME_CSV,FOLDER_MARKET_DATA+NEWS_DATA_FILE_NAME_CSV))
