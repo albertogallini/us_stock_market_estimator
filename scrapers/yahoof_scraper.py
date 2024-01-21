@@ -44,6 +44,7 @@ def get_news_text(url):
         return None
 
 
+
 YAHOO_F_DATA_FILE_NAME_CSV = "scrapers/yahoo_finance_sentiment.csv"
 
 def generate_data_set_csv(item_list):

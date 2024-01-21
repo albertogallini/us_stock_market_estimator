@@ -164,7 +164,7 @@ def save_to_csv(data):
         else: 
             print("Duplicated news : {}".format(news.split(':')[1]))
 
-def save_news_text(news_text:str) -> float: 
+def save_news_text(news_text:str, sm: SentimentModel) -> float: 
     news_text.replace("|","-")
     score = sm.get_sentiment_score(news_text)
     ns = f"src:Investing.com|news:{n[0]:s}|Date:{get_YYYY_MM_DD_idc(n[2]):s}|Scores:{score:.6f}|news_text:{news_text:s}"
@@ -176,7 +176,7 @@ def save_news_text(news_text:str) -> float:
 import unittest
 import logging  
 import pandas as pd
-from scrapers.yahoof_scraper    import get_yahoo_finance_news_rss,get_news_text, get_YYYY_MM_DD_yh
+from scrapers.yahoof_scraper    import get_yahoo_finance_news_rss,get_news_text
 from scrapers.investing_dot_com import get_investing_dot_com_news_rss, get_news_text_selenium, get_YYYY_MM_DD_idc
    
 class TestSentimentModel(unittest.TestCase):
@@ -192,14 +192,13 @@ class TestSentimentModel(unittest.TestCase):
     def test_score_yahoo(self):
         print("Start Yahoo ...")
         top_news = get_yahoo_finance_news_rss()
-        sm = SentimentModel()
         acc_score = 0
         counter   = 0
         for n in top_news:
             news_text = get_news_text(n[1])
             if(news_text is not None):
                 try:
-                    score = save_news_text(news_text)
+                    score = save_news_text(news_text,sm)
                     acc_score += score
                     counter += 1
                     self.assertGreater(score,0) 
@@ -211,14 +210,13 @@ class TestSentimentModel(unittest.TestCase):
     def test_score_investing(self):
         print("Start Investing.com ...")
         top_news = get_investing_dot_com_news_rss()
-        sm = SentimentModel()
         acc_score = 0
         counter   = 0
         for n in top_news:
             news_text = get_news_text_selenium(n[1])
             if(news_text is not None):
                 try:
-                    score = save_news_text(news_text)
+                    score = save_news_text(news_text,sm)
                     acc_score += score
                     counter += 1
                     self.assertGreater(score,0) 
@@ -242,31 +240,36 @@ if __name__ == "__main__":
             print("{} is not a valid value".format(sys.argv[2]))
 
     else:
+
         sm = SentimentModel()
         acc_score = 0
         counter   = 0
-        print("Start Investing.com ...")
-        top_news = get_investing_dot_com_news_rss()
-        for n in top_news:
-            news_text = get_news_text_selenium(n[1])
-            if(news_text is not None):
-                try:
-                    score = save_news_text(news_text)
-                    acc_score += score
-                    counter += 1
-                except:
-                    continue
+        
         print("Start Yahoo ...")
         top_news = get_yahoo_finance_news_rss()
         for n in top_news:
             news_text = get_news_text(n[1])
             if(news_text is not None):
                 try:
-                    score = save_news_text(news_text)
+                    score = save_news_text(news_text,sm)
                     acc_score += score
                     counter += 1
                 except:
                     continue
+        
+        
+        print("Start Investing.com ...")
+        top_news = get_investing_dot_com_news_rss()
+        for n in top_news:
+            news_text = get_news_text_selenium(n[1])
+            if(news_text is not None):
+                try:
+                    score = save_news_text(news_text,sm)
+                    acc_score += score
+                    counter += 1
+                except:
+                    continue
+
         print("Accumulated score {:.5f}".format((acc_score/counter)))
        
         import os
