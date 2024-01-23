@@ -6,6 +6,7 @@ PREFIX_INDEX_SUB_SECTOR         = "index_sub_sector_"
 PREFIX_ESTIMATED_PRICE          = "est_prices_"
 
 FILE_NAME_RATES                 = "usd_rates.csv"
+FILE_NAME_INFLATION             = "inflation.csv"
 FILE_NAME_FNG                   = "fear_and_greed.csv"
 
 FOLDER_MARKET_DATA              = "/Volumes/data/"
