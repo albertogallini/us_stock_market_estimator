@@ -75,7 +75,7 @@ class IRFetcherTreasury:
         import pandas as pd
         
         self.__df = pd.DataFrame()
-        for year in ['2020','2021','2022','2023']:
+        for year in ['2020','2021','2022','2023','2024']:
             tables = pd.read_html(self.__url+year)
             df = tables[0] [['Date','1 Mo','2 Mo','3 Mo','4 Mo','6 Mo','1 Yr','2 Yr','3 Yr','5 Yr','7 Yr','10 Yr','20 Yr','30 Yr']]
             df['Date'] = pd.to_datetime(df['Date'])
