@@ -36,8 +36,11 @@ def get_news_text(url):
         soup = BeautifulSoup(response.text, 'html.parser')
         story_items = soup.find('div', class_='caas-body')
         readable_text = ""
-        for item in story_items:
-            readable_text += item.get_text(separator='\n', strip=True)   
+        if story_items != None:
+            for item in story_items:
+                readable_text += item.get_text(separator='\n', strip=True)   
+        else:
+            print("No story items for {}".format(url))
         return readable_text
     else:
         print(f"Error response status code : {response.status_code}")
