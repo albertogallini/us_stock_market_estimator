@@ -171,6 +171,7 @@ class QualityChecker(object):
         
         
 if __name__ == '__main__':
+    import sys
     init_config("config.json")
     logger = logging.getLogger('quality_checker.logger')
     file_handler = logging.FileHandler('quality_checker.log')
@@ -179,8 +180,8 @@ if __name__ == '__main__':
     
     logger.info("Quality Checker ...")
     
-    
-    qc = QualityChecker(report_folder = FOLDER_REPORD_PDF, prevision_date = datetime.strptime("11-01-2024", "%d-%m-%Y"), logger = logger)
+    print("Test on day: {}:".format(sys.argv[1]))
+    qc = QualityChecker(report_folder = FOLDER_REPORD_PDF, prevision_date = datetime.strptime(sys.argv[1], "%d-%m-%Y"), logger = logger)
     qc.return_quality_stats_line()
     
         
