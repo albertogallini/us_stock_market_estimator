@@ -71,10 +71,12 @@ class SequentialModel1StockMultiFactor(SequentialModel1StockAndRates):
         
         self.df_rates           = pd.read_csv(input_data_rates_csv)
         self.df_fear_and_greed  = pd.read_csv(input_fear_and_greed_csv)
+        self.df_inflation       = pd.read_csv(FOLDER_MARKET_DATA+"inflation.csv")
         self.sentiment_score    = pd.read_csv(FOLDER_MARKET_DATA+"news_scores.csv")[["Date","Scores"]].groupby('Date')['Scores'].mean().to_frame().reset_index()
         
         self.df = self.df.merge(self.df_rates, on='Date', how='left')
         self.df = self.df.merge(self.df_fear_and_greed, on='Date', how='left')
+        self.df = self.df.merge(self.df_inflation, on='Date', how='left')
         self.df = self.df.merge(self.sentiment_score, on='Date', how='left')
 
         index_sub_sector_files = fnmatch.filter(os.listdir(data_dir_path), 'index_sub_sector_*')
@@ -105,6 +107,7 @@ class SequentialModel1StockMultiFactor(SequentialModel1StockAndRates):
         self.df = fill_value('10 Yr',self.df)
         self.df = fill_value('5 Yr',self.df)
         self.df = fill_value('1 Yr',self.df)
+        self.df = fill_value('infl10',self.df)
         self.df = fill_value('Fear Greed',self.df)
 
          # clean up Scores data :
@@ -130,8 +133,12 @@ class SequentialModel1StockMultiFactor(SequentialModel1StockAndRates):
         self.df['10 Yr']  = (( self.df['10 Yr'] -  self.df['10 Yr'].min())   / ( self.df['10 Yr'].max()  -  self.df['10 Yr'].min()))   * 1
 
 
+        self.df['infl10'] = (( self.df['infl10'] -  self.df['infl10'].min())   / ( self.df['infl10'].max()  -  self.df['infl10'].min()))  * 1
+
         self.df['Fear Greed'] = (( self.df['Fear Greed'] -  self.df['Fear Greed'].min())   / ( self.df['Fear Greed'].max()  -  self.df['Fear Greed'].min()))  * 1
         self.df['Scores'] = (( self.df['Scores'] -  self.df['Scores'].min())   / ( self.df['Scores'].max()  -  self.df['Scores'].min()))  * 1
+
+        
         
 
         for k in self.index_sub_sector_price.keys():
@@ -142,7 +149,7 @@ class SequentialModel1StockMultiFactor(SequentialModel1StockAndRates):
 
 
         # input factor list:
-        self.calibration_factors_list = ['Close', 'Volume','3 Mo','1 Yr','5 Yr','10 Yr'] + list(self.index_sub_sector_price.keys())
+        self.calibration_factors_list = ['Close', 'Volume','3 Mo','1 Yr','5 Yr','10 Yr','infl10'] + list(self.index_sub_sector_price.keys())
         self.sentiment_factors_list   = ['Fear Greed','Scores'] 
 
         if (self.df.empty):
@@ -391,7 +398,7 @@ def evaluate_ticker_distribution(class_type, input_file:str, scenarios: int = 10
     print("3 sigma: ", 3*std)        
     
     
-def check_data_correlation(input_file:str, rates = True, indexes = False, fng = True):
+def check_data_correlation(input_file:str, rates = True, indexes = False, fng = True, inflation = True):
     sm1s = SequentialModel1StockMultiFactor(input_data_price_csv = input_file,
                                             input_data_rates_csv = FOLDER_MARKET_DATA+FILE_NAME_RATES,
                                             input_fear_and_greed_csv = FOLDER_MARKET_DATA+FILE_NAME_FNG) 
@@ -399,6 +406,7 @@ def check_data_correlation(input_file:str, rates = True, indexes = False, fng = 
     print (sm1s.df_not_normalized[['Close']].describe())
 
     sm1s.df_not_normalized['rtn'] = sm1s.df_not_normalized['Close'].pct_change()
+   
     if (rates):
         sm1s.df_not_normalized.plot(kind="scatter",  x="Close", y='3 Mo', color = "green")
         sm1s.df_not_normalized.plot(kind="scatter",  x="Close", y='4 Mo', color = "blue")
@@ -408,6 +416,18 @@ def check_data_correlation(input_file:str, rates = True, indexes = False, fng = 
         sm1s.df_not_normalized.plot(kind="scatter",  x="Close", y='5 Yr', color = "red")
         sm1s.df_not_normalized.plot(kind="scatter",  x="Close", y='7 Yr', color = "red")
         sm1s.df_not_normalized.plot(kind="scatter",  x="Close", y='10 Yr', color = "red")
+
+        sm1s.df_not_normalized['3Mrtn'] = sm1s.df_not_normalized['3 Mo'].pct_change()
+        sm1s.df_not_normalized['1Yrtn'] = sm1s.df_not_normalized['1 Yr'].pct_change()
+        sm1s.df_not_normalized['10Yrtn'] = sm1s.df_not_normalized['10 Yr'].pct_change()
+        sm1s.df_not_normalized.plot(kind="scatter",  x="rtn", y='3Mrtn', color = "red")
+        sm1s.df_not_normalized.plot(kind="scatter",  x="rtn", y='1Yrtn', color = "red")
+        sm1s.df_not_normalized.plot(kind="scatter",  x="rtn", y='10Yrtn', color = "red")
+
+    if (inflation):
+        sm1s.df_not_normalized.plot(kind="scatter",  x="Close", y='infl10', color = "red")
+        sm1s.df_not_normalized['infl10rtn'] = sm1s.df_not_normalized['infl10'].pct_change()
+        sm1s.df_not_normalized.plot(kind="scatter",  x="rtn", y='infl10rtn', color = "red")
 
     if(indexes):
         for t in ['IYK', 'ITA', 'RTH', 'XRT', 'XHB', 'XLY', 'IBD', 'XRT', 'VDC', 'IYC', 'IYC', 'VDE', 'XOP', 'XLE', 'VCR', 'XES', 'KBE', 'IHF',
@@ -426,7 +446,7 @@ def check_data_correlation(input_file:str, rates = True, indexes = False, fng = 
 def main():
     init_config()
     print("Running in one ticker mode")
-    input_file = PREFIX_PRICE_FETCHER + "IONQ" + ".csv"
+    input_file = PREFIX_PRICE_FETCHER + "IBM" + ".csv"
     print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
     check_data_correlation(FOLDER_MARKET_DATA+input_file)
     evaluate_ticker_distribution(SequentialModel1StockMultiFactor, FOLDER_MARKET_DATA + input_file,
