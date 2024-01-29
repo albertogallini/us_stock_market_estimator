@@ -141,7 +141,7 @@ the yesterday price si very high).
 Sentiment Analysis and rates change have the purpouse to reduce the similarity with the previous day price that mis induced as (over-fitting) effect of the training. 
 
 The back tester across many strocks shows overall good performance as in most of the case the probabilty to get an error less than 5% is greater than 80%.
-As shoed in this [report](./docs/back_tester_batch.pdf). Here below a simple page from it: <br>
+As showed in this [report](./docs/back_tester_batch.pdf). Here below a simple page from it: <br>
 ![Alt text](./imgs/back_test_mult.png?width=250&height=150)
 <br>
 The report has been built trainig the model multiple times. Each curve show the probabilty density for each calibration.  It easy to see there are good calibrations and less good calibrations. 

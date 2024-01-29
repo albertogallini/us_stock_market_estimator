@@ -8,6 +8,7 @@ from  market_price_fetcher import fulldump,update,CustomTickerFetcher
 from  index_sector_fetcher import IndexSectorFetcher
 from  rates_fetcher import IRFetcherTreasury
 from  fear_and_greed_index import FearAndGreedIndex
+from  infltation_fetcher   import InflationFetcher
 
 from price_estimator.const_and_utils import *
         
@@ -71,15 +72,23 @@ if __name__ == '__main__':
         print('Fetching USD rates ')  
         irf = IRFetcherTreasury()
         usd_rates = irf.get_rates()
-        logger.debug(usd_rates)
         usd_rates.to_csv(FOLDER_MARKET_DATA + FILE_NAME_RATES)
+        logger.debug(usd_rates)
 
+        logger.info('Fetching USD Fear&Greed ')
+        print('Fetching USD Fear&Greed ')  
         fngi = FearAndGreedIndex(start='2020-09-30', end=today_str)
         fngdf = fngi.fetch()
         fngdf.to_csv(FOLDER_MARKET_DATA + FILE_NAME_FNG)
+        logger.debug(fngdf)
+
+        logger.info('Fetching USD 10Y Inflation ')
+        print('Fetching USD 10Y Inflation ')  
+        irf = InflationFetcher()
+        infl10y_rates = irf.get_inflation10y()
+        infl10y_rates.to_csv(FOLDER_MARKET_DATA + FILE_NAME_INFLATION)
+        logger.debug(infl10y_rates)
         
-        
-       
         
     except Exception as e:
          print("Caught an exception: ", e)

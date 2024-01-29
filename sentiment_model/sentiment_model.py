@@ -164,6 +164,10 @@ def save_to_csv(data):
         else: 
             print("Duplicated news : {}".format(news.split(':')[1]))
 
+    dfcopy = pd.read_csv(NEWS_DATA_FILE_NAME_CSV)
+    # copy the updated file to the data folder as well. 
+    dfcopy.to_csv(FOLDER_MARKET_DATA+NEWS_DATA_FILE_NAME_CSV)
+
 def save_news_text(news_text:str, sm: SentimentModel) -> float: 
     news_text.replace("|","-")
     score = sm.get_sentiment_score(news_text)
@@ -272,5 +276,5 @@ if __name__ == "__main__":
 
         print("Accumulated score {:.5f}".format((acc_score/counter)))
        
-        import os
-        os.system('cp {} {}'.format(NEWS_DATA_FILE_NAME_CSV,FOLDER_MARKET_DATA+NEWS_DATA_FILE_NAME_CSV))
+        #import os
+        #os.system('cp {} {}'.format(NEWS_DATA_FILE_NAME_CSV,FOLDER_MARKET_DATA+NEWS_DATA_FILE_NAME_CSV))

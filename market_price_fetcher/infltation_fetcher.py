@@ -6,13 +6,21 @@ class InflationFetcher():
 
     __url = "https://fred.stlouisfed.org/graph/fredgraph.csv?bgcolor=%23e1e9f0&chart_type=line&drp=0&fo=open%20sans&graph_bgcolor=%23ffffff&height=450&mode=\
             fred&recession_bars=on&txtcolor=%23444444&ts=12&tts=12&width=1318&nt=0&thu=0&trc=0&show_legend=yes&show_axis_titles=yes&\
-            show_tooltip=yes&id=T10YIE&scale=left&cosd=2019-01-22&coed=2024-01-22&line_color=%234572a7&link_values=false&line_style=solid&\
-            mark_type=none&mw=3&lw=2&ost=-99999&oet=99999&mma=0&fml=a&fq=Daily&fam=avg&fgst=lin&fgsnd=2020-02-01&line_index=1&transformation=lin&vintage_date=2024-01-23&\
-            revision_date=2024-01-23&nd=2020-01-01"
+            show_tooltip=yes&id=T10YIE&scale=left&cosd=2019-01-22&coed=YYYYMMDD&line_color=%234572a7&link_values=false&line_style=solid&\
+            mark_type=none&mw=3&lw=2&ost=-99999&oet=99999&mma=0&fml=a&fq=Daily&fam=avg&fgst=lin&fgsnd=2020-02-01&line_index=1&transformation=lin&vintage_date=YYYYMMDD&\
+            revision_date=YYYYMMDD&nd=2020-01-01"
 
-    def __init__(self):
+    def __init__(self, datestr: str = None):
         import numpy as np
         import io
+
+        if datestr ==None:
+            from datetime import date 
+            today = date.today()
+            today_str = today.strftime("%Y-%m-%d")
+            self.__url = self.__url.replace("YYYYMMDD",today_str)
+        else:
+            self.__url = self.__url.replace("YYYYMMDD",datestr)
 
         response = requests.get(self.__url)
         csv_file = io.StringIO(response.content.decode('utf-8'))
