@@ -90,7 +90,7 @@ class TestYahoof(unittest.TestCase):
        
         for n in top_news:
             print("------------ " + n[0])
-            get_news_text(n[1])
+            print(get_news_text(n[1]))
 
         self.assertGreater(len(top_news),0) 
         generate_data_set_csv (top_news)

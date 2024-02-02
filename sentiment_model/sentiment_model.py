@@ -251,7 +251,9 @@ if __name__ == "__main__":
         
         print("Start Yahoo ...")
         top_news = get_yahoo_finance_news_rss()
+        
         for n in top_news:
+            print("{} --> {} ".format(n[1],n[0]))
             news_text = get_news_text(n[1])
             if(news_text is not None):
                 try:
