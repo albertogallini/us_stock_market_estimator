@@ -12,7 +12,7 @@
         "id": "3"
     },
     {
-        "stocks": ["UPST","CFLT"],
+        "stocks": ["UPST","CFLT","PYPL"],
         "id": "4"
     },
     {
@@ -36,15 +36,15 @@
         "id": "9"
     },
     {
-        "stocks": ["NEE","NVDA"],
+        "stocks": ["NEE","NVDA","META"],
         "id": "10"
     },
     {
-        "stocks": ["ABNB","PTEN"],
+        "stocks": ["ABNB","PTEN","AMD"],
         "id": "11"
     },
     {
-        "stocks": ["UFPT","WU"],
+        "stocks": ["UFPT","WU","AMZN"],
         "id": "12"
     }
 ]

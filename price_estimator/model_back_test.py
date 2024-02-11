@@ -149,6 +149,7 @@ def back_test(args: tuple):
     calibration_folder = args[1]
     scenario_id = str(args[2])
     class_type  = args[3]
+    training_percentage = float(args[4])
     
     print(input_file)
     print(calibration_folder)
@@ -157,7 +158,7 @@ def back_test(args: tuple):
                                           input_data_price_csv=input_file,
                                           input_data_rates_csv=FOLDER_MARKET_DATA+"/usd_rates.csv", 
                                           input_fear_and_greed_csv= FOLDER_MARKET_DATA+"/fear_and_greed.csv",
-                                          training_percentage=0.75) 
+                                          training_percentage=training_percentage) 
         if(calibration_folder == None):
             print("Calibrating the model ...")
             prediction_model.calibrate_model()
@@ -191,20 +192,30 @@ def main():
     init_config()
     model_class = get_model_class(None)
 
+
     if len(sys.argv) > 2:
         # try:
             from multiprocessing import Pool
             subject = sys.argv[1]
+
+            if len(sys.argv) > 3:
+                model_class = get_model_class(sys.argv[3])
+            
+            if len(sys.argv) > 4:
+                training_percentage = float(sys.argv[4])
+
             if subject.endswith(".json"):
+                print("Processing " + subject  + "\n")
                 import json
                 with open(subject, 'r') as f:
                     data = json.load(f)
                     params = []
                     for item in data:
                         stocks = item['stocks']
-                        for ticker in stocks: 
-                            params = list(params + [ (FOLDER_MARKET_DATA + PREFIX_PRICE_FETCHER + ticker+".csv", None, i , model_class) 
-                                        for i in range(int(sys.argv[2])) ] )
+                        for ticker in stocks:
+                            file_name = FOLDER_MARKET_DATA + PREFIX_PRICE_FETCHER + ticker +".csv" 
+                            params = list(params + [ (file_name, None, i, model_class, training_percentage) for i in range(int(sys.argv[2])) ] )
+
                     with Pool(processes = 3) as pool:
                         print(params)
                         results = pool.map(back_test, params)
@@ -216,16 +227,14 @@ def main():
             else:
                 file_name = FOLDER_MARKET_DATA + PREFIX_PRICE_FETCHER + subject +".csv"
                 print("Processing " + file_name  + "\n")
-               
-                if len(sys.argv) > 3:
-                    model_class = get_model_class(sys.argv[3])
 
                 with Pool(processes = 3) as pool: 
-                    params = [(file_name, None, i, model_class) for i in range(int(sys.argv[2]))]
+                    params = [(file_name, None, i, model_class, training_percentage) for i in range(int(sys.argv[2]))]
                     print(params)
                     results = pool.map(back_test, params)
                     predictions, model = zip(*results)
-                    show_prediction_vs_actual_mult(predictions,get_ticker(file_name),model[0])
+
+                show_prediction_vs_actual_mult(predictions,get_ticker(file_name),model[0])
             
             
 

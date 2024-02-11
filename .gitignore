@@ -9,3 +9,4 @@ news_storage
 launch.json
 debug.csv
 get_data.bat
+check_series_notebook_vscode.py
