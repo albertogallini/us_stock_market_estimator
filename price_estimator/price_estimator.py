@@ -138,7 +138,8 @@ def produce_estimate_price_distributions(ticker_list : list , input_data_dir: st
         try:
             sm1s = SequentialModel1StockMultiFactor(input_data_price_csv = files[ticker_index],
                                                      input_data_rates_csv = FOLDER_MARKET_DATA + FILE_NAME_RATES,
-                                                     input_fear_and_greed_csv = FOLDER_MARKET_DATA + FILE_NAME_FNG) 
+                                                     input_fear_and_greed_csv = FOLDER_MARKET_DATA + FILE_NAME_FNG,
+                                                     training_percentage=0.97) 
         except Exception as e:
             print("Caught an exception: ", e)
             print("Error in generating model for " + files[ticker_index] )
