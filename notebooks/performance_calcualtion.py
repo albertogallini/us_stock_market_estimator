@@ -84,7 +84,7 @@ import pandas as pd
 import datetime as dt
 from datetime import datetime
 
-def compute_pnl(portfolio: pd.DataFrame) -> None:
+def fetch_prices(portfolio: pd.DataFrame) -> None:
 
     portoflio_and_market_data = dict()
     portfolio['date'] = portfolio.date.apply(lambda d : pd.to_datetime(datetime.strptime(d, "%Y-%m-%d")).date() )
@@ -101,15 +101,155 @@ def compute_pnl(portfolio: pd.DataFrame) -> None:
         except Exception as e:
             print("price not found: {}".format(e))
             continue
-    
-    for pos in portoflio_and_market_data.items():
-        display(pos[1].sort_values(by=['date']))
 
-
+    for pos in portoflio_and_market_data.items():    
+        pos[1].to_csv("./../../reports/daily_holdings_and_prices"+pos[0]+".csv")
 
 portfolio = pd.read_csv("./../../reports/daily_holdings.csv")
-compute_pnl(portfolio)
+fetch_prices(portfolio)
+
+
+#%%
+import pandas as pd
+import datetime as dt
+from datetime import datetime
+import numpy as np 
+
+def compute_pnl(p: pd.DataFrame) -> None:
+    daycount = 0
+    p['Close'].ffill(inplace=True)
+    p['quantity'].ffill(inplace=True)
+    p['Dividends'].replace(to_replace=np.NaN, value=0., inplace=True)
+    
+
+    for r in p.iterrows():
+        if daycount == 0:
+            p['mkt_value']     = None
+            p['mkt_value_bod'] = None
+            p['mkt_value_eod'] = None
+            p['pnl']           = None
+            p['r']             = None
+            daycount += 1
+            continue
+        p.at[daycount,'mkt_value']     = float(p.at[daycount,'quantity'])  *  p.at[daycount,'Close']    
+        p.at[daycount,'mkt_value_bod'] = float(p.at[daycount-1,'quantity'])  *  p.at[daycount-1,'Close']
+        p.at[daycount,'mkt_value_eod'] = p.loc[daycount-1,'quantity'] * (  p.at[daycount,'Close'] +  p.at[daycount,'Close'] *  p.at[daycount,'Dividends'])
+        p.at[daycount,'pnl'] = p.loc[daycount,'mkt_value_eod'] - p.loc[daycount,'mkt_value_bod']
+        p.at[daycount,'r'] = (p.loc[daycount,'pnl'] / p.loc[daycount,'mkt_value_bod']) + 1
+        daycount += 1
+
+    return p
+
+
+import os
+prefix = 'daily_holdings_and_prices'
+portfolio_dir = './../../reports/'
+files = [filename for filename in os.listdir(portfolio_dir) if filename.startswith(prefix)]
+portfolio_performance_daily = None
+
+print("Loading position files ...")
+for f in files:
+    #print("Loading {}.".format(f))    
+    position_performance_daily  = compute_pnl(pd.read_csv(portfolio_dir+f))
+    #display(position_performance_daily)
+    portfolio_performance_daily = pd.concat([position_performance_daily,portfolio_performance_daily], ignore_index=True)        
         
+#portfolio_performance_daily.to_csv("test.csv")
+    
+sc = 0
+portfolio_series = dict()
+metrics = ['pnl', 'mkt_value', 'mkt_value_bod', 'mkt_value_eod', 'r']
+portfolio_series['t'] = list()
+for m in metrics:
+    portfolio_series[m] = list()
+
+    for day,snapshot in portfolio_performance_daily.groupby(['date']):
         
+        s = snapshot[snapshot[m].apply(lambda x : (x is not None))]
+        s = s[pd.notna(s[m])]
+        d = datetime.strptime(day[0], "%Y-%m-%d").date()
+        if not s.empty:
+            if m == 'r':
+                portfolio_series['t'].append(d)
+                portfolio_series[m].append(sum(s['pnl']) / sum(s['mkt_value_bod']) +1)
+            else:
+                portfolio_series[m].append(sum(s[m]))
+        else:
+            if m == 'r':
+                portfolio_series['t'].append(d)
+                portfolio_series[m].append(1)
+            else:
+                portfolio_series[m].append(0)
+
+for m in metrics:
+
+    transactions_df = pd.read_csv("./../../reports/transactions_si_tickers.csv") [['Operazione','Segno','Quantita']]
+    
+    df = pd.DataFrame({ 't': portfolio_series['t'], m: portfolio_series[m]})
+    df.plot(figsize=(12,6),grid=True, x='t')        
+
+
+    if m == 'r':
+
+        acc_r = [1] 
+        for i in range(1, len(portfolio_series[m])):
+            pp = acc_r[-1] * portfolio_series[m][i]
+            acc_r.append(pp)
+
+        import matplotlib.pyplot as plt
+
+        plt.figure(figsize=(12, 6))
+        df = pd.DataFrame({ 't': portfolio_series['t'], m: acc_r})
+        plt.plot(df['t'],
+                 df[m],
+                 label='acc. return', color='blue')
+        plt.grid(True)
+        plt.xticks(np.arange(min(df['t']), max(df['t']) , 90))
+        plt.xticks(rotation=45)
+        
+      
+        r_count = 0
+        transactions_df['Operazione'] = transactions_df['Operazione'].apply(lambda d: datetime.strptime(d, "%d/%m/%Y").date())
+        transactions_df = transactions_df.sort_values(by=['Operazione'])
+        for event_date in transactions_df['Operazione']:
+            event_type = transactions_df[transactions_df['Operazione'] == event_date]['Segno'].values[0]
+            event_color = 'green'
+            if event_type == 'A':
+                event_type ='b'
+            if event_type == 'V':
+                event_type ='s'
+                event_color = 'red'
+
+            plt.text(event_date,
+                    df[df['t']==event_date]['r'].values[0],
+                    event_type,
+                    color=event_color, 
+                    fontsize=7,
+                    horizontalalignment='center',
+                    verticalalignment='bottom')
+            r_count += 1
+      
+
+        # Customize the plot
+        plt.title('Accumulated returns')
+        plt.xlabel('t')
+        plt.ylabel('r')
+        plt.legend()
+
+        # Show the plot
+        plt.show()
+
+
+
+        #df.plot(figsize=(12,6),grid=True , x='t')
+
+
+           
+
+
+    
+    
 
     # %%
+
+
