@@ -2,10 +2,13 @@
 import pandas as pd
 import datetime as dt
 from datetime import datetime
+import  notebook_constants 
 
+print(dir(notebook_constants))
+#%%
 
 def unroll_daily_holdings():
-    holdings =  pd.read_csv("./../../reports/holdings.csv").sort_values(by=['date'])[['ticker','isin','date','quantity','ccy']]
+    holdings =  pd.read_csv(notebook_constants.DATA_FOLDER+notebook_constants.PORTFOLIO_HOLDINGS).sort_values(by=['date'])[['ticker','isin','date','quantity','ccy']]
 
     daily_snapshots = pd.DataFrame(columns=holdings.columns)
 
@@ -74,7 +77,7 @@ def unroll_daily_holdings():
         snap_cont +=1
                     
     #display(daily_snapshots)
-    daily_snapshots.to_csv("./../../reports/daily_holdings.csv")
+    daily_snapshots.to_csv(notebook_constants.DATA_FOLDER + notebook_constants.PORTFOLIO_HOLDINGS_DAILY)
     
 unroll_daily_holdings()
                 
@@ -83,6 +86,7 @@ unroll_daily_holdings()
 import pandas as pd
 import datetime as dt
 from datetime import datetime
+from price_estimator import const_and_utils
 
 def fetch_prices(portfolio: pd.DataFrame) -> None:
 
@@ -93,7 +97,7 @@ def fetch_prices(portfolio: pd.DataFrame) -> None:
     for ticker in portfolio['ticker'].unique():
         try:
             print("Fetiching {}".format(ticker))
-            ticker_prices = pd.read_csv("./../../data/price_fetcher_"+ticker+".csv")
+            ticker_prices = pd.read_csv(const_and_utils.FOLDER_MARKET_DATA+const_and_utils.PREFIX_PRICE_FETCHER+ticker+".csv")
             t_p = ticker_prices[["Date","Close","Dividends"]].rename(columns={'Date':'date'})
             t_p['date'] = t_p.date.apply(lambda d : pd.to_datetime(d).date())
             positions = portfolio[portfolio['ticker'] == ticker]
@@ -103,9 +107,9 @@ def fetch_prices(portfolio: pd.DataFrame) -> None:
             continue
 
     for pos in portoflio_and_market_data.items():    
-        pos[1].to_csv("./../../reports/daily_holdings_and_prices"+pos[0]+".csv")
+        pos[1].to_csv(notebook_constants.DATA_FOLDER+notebook_constants.DAILY_HOLDINGS_PREFIX+pos[0]+".csv")
 
-portfolio = pd.read_csv("./../../reports/daily_holdings.csv")
+portfolio = pd.read_csv(notebook_constants.DATA_FOLDER + notebook_constants.PORTFOLIO_HOLDINGS_DAILY)
 fetch_prices(portfolio)
 
 
@@ -142,8 +146,8 @@ def compute_pnl(p: pd.DataFrame) -> None:
 
 
 import os
-prefix = 'daily_holdings_and_prices'
-portfolio_dir = './../../reports/'
+prefix = notebook_constants.DAILY_HOLDINGS_PREFIX
+portfolio_dir = notebook_constants.DATA_FOLDER
 files = [filename for filename in os.listdir(portfolio_dir) if filename.startswith(prefix)]
 portfolio_performance_daily = None
 
@@ -183,14 +187,18 @@ for m in metrics:
 
 for m in metrics:
 
-    transactions_df = pd.read_csv("./../../reports/transactions_si_tickers.csv") [['Operazione','Segno','Quantita']]
+    transactions_df = pd.read_csv(notebook_constants.DATA_FOLDER+
+                                  notebook_constants.TRANSACTION_FILE_TICKERS) [
+                                      [notebook_constants.TRANSACTION_FIELD_TR_DATE,
+                                       notebook_constants.TRANSACTION_FIELD_BUY_SELL,
+                                       notebook_constants.TRANSACTION_FIELD_QUANTITIY]
+                                      ]
     
     df = pd.DataFrame({ 't': portfolio_series['t'], m: portfolio_series[m]})
     df.plot(figsize=(12,6),grid=True, x='t')        
 
 
     if m == 'r':
-
         acc_r = [1] 
         for i in range(1, len(portfolio_series[m])):
             pp = acc_r[-1] * portfolio_series[m][i]
@@ -198,7 +206,7 @@ for m in metrics:
 
         import matplotlib.pyplot as plt
 
-        plt.figure(figsize=(12, 6))
+        plt.figure(figsize=(20, 10))
         df = pd.DataFrame({ 't': portfolio_series['t'], m: acc_r})
         plt.plot(df['t'],
                  df[m],
@@ -207,12 +215,11 @@ for m in metrics:
         plt.xticks(np.arange(min(df['t']), max(df['t']) , 90))
         plt.xticks(rotation=45)
         
-      
         r_count = 0
-        transactions_df['Operazione'] = transactions_df['Operazione'].apply(lambda d: datetime.strptime(d, "%d/%m/%Y").date())
-        transactions_df = transactions_df.sort_values(by=['Operazione'])
-        for event_date in transactions_df['Operazione']:
-            event_type = transactions_df[transactions_df['Operazione'] == event_date]['Segno'].values[0]
+        transactions_df[notebook_constants.TRANSACTION_FIELD_TR_DATE] = transactions_df[notebook_constants.TRANSACTION_FIELD_TR_DATE].apply(lambda d: datetime.strptime(d, "%d/%m/%Y").date())
+        transactions_df = transactions_df.sort_values(by=[notebook_constants.TRANSACTION_FIELD_TR_DATE])
+        for event_date in transactions_df[notebook_constants.TRANSACTION_FIELD_TR_DATE]:
+            event_type = transactions_df[transactions_df[notebook_constants.TRANSACTION_FIELD_TR_DATE] == event_date]['Segno'].values[0]
             event_color = 'green'
             if event_type == 'A':
                 event_type ='b'
@@ -229,26 +236,12 @@ for m in metrics:
                     verticalalignment='bottom')
             r_count += 1
       
-
-        # Customize the plot
         plt.title('Accumulated returns')
         plt.xlabel('t')
         plt.ylabel('r')
         plt.legend()
-
-        # Show the plot
         plt.show()
 
-
-
-        #df.plot(figsize=(12,6),grid=True , x='t')
-
-
-           
-
-
-    
-    
 
     # %%
 

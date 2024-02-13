@@ -1,4 +1,5 @@
 # %%
+import notebook_constants
 import pandas as pd
 import yfinance as yf
 import time
@@ -29,29 +30,27 @@ def get_ticker(isin):
 
 # %%
 def generate_transaction_file():
-    transactions = pd.read_csv('../../reports/transactions_si.csv')
+    transactions = pd.read_csv(notebook_constants.DATA_FOLDER+notebook_constants.TRANSACTION_FILE)
     assets = pd.DataFrame(columns=['ISIN']) 
     assets['ISIN']   = transactions['ISIN'].unique()
     assets['ticker'] = assets['ISIN'].apply(lambda n : get_ticker(n))
-    assets.to_csv("../../reports/portfolio_assets.csv")
+    assets.to_csv(notebook_constants.DATA_FOLDER+notebook_constants.PORTFOLIO_ASSETS_FILE)
     transactions = transactions.merge(assets, on='ISIN', how='left')
-    transactions.to_csv('../../reports/transactions_si_tickers.csv')
+    transactions.to_csv(notebook_constants.DATA_FOLDER+notebook_constants.TRANSACTION_FILE_TICKERS)
 
-# generate_transaction_file()
+generate_transaction_file()
 
 # %%
 import pandas as pd
-
-transactions= pd.read_csv('../../reports/transactions_si_tickers.csv')
 from datetime import datetime
+import notebook_constants
+
+
+transactions= pd.read_csv(notebook_constants.DATA_FOLDER+notebook_constants.TRANSACTION_FILE_TICKERS)
 transactions['Date'] = transactions.Operazione.apply(lambda d : datetime.strptime(d, "%d/%m/%Y"))
 transactions.sort_values(by=['Date'])
-
 holdings = pd.DataFrame(columns=['ticker','isin','date','quantity','ccy'])
 dates    = [ d.to_pydatetime() for d in sorted(transactions['Date'].unique())]
-
-from datetime import datetime
-
 
 
 for d in dates: 
@@ -71,42 +70,42 @@ for d in dates:
                 last_d = asset_holds['date'].iloc[-1]
     
         if t['Date'] != last_d:
-            if (t['Segno'] == 'A'):
-                new_hold = {'ticker': t['ticker'],
-                            'isin': t['ISIN'],
-                            'date':t['Date'],
-                            'quantity':last_q+float(t['Quantita'].replace(",","")),
-                            'ccy':t['Divisa']}
+            if (t[notebook_constants.TRANSACTION_FIELD_BUY_SELL] == 'A'):
+                new_hold = {'ticker': t[notebook_constants.TRANSACTION_FIELD_TICKER],
+                            'isin':   t[notebook_constants.TRANSACTION_FIELD_ISIN],
+                            'date':   t[notebook_constants.TRANSACTION_FIELD_DATE],
+                            'quantity':last_q+float(t[notebook_constants.TRANSACTION_FIELD_QUANTITIY].replace(",","")),
+                            'ccy':    t[notebook_constants.TRANSACTION_FIELD_CCY]}
                 holdings.loc[len(holdings)] = new_hold
             
-            if (t['Segno'] == 'V'):
-                new_hold = {'ticker': t['ticker'],
-                            'isin': t['ISIN'],
-                            'date':t['Date'],
-                            'quantity':last_q-float(t['Quantita'].replace(",","")),
-                            'ccy':t['Divisa']}
+            if (t[notebook_constants.TRANSACTION_FIELD_BUY_SELL] == 'V'):
+                new_hold = {'ticker': t[notebook_constants.TRANSACTION_FIELD_TICKER],
+                            'isin':   t[notebook_constants.TRANSACTION_FIELD_ISIN],
+                            'date':   t[notebook_constants.TRANSACTION_FIELD_DATE],
+                            'quantity':last_q-float(t[notebook_constants.TRANSACTION_FIELD_QUANTITIY].replace(",","")),
+                            'ccy':    t[notebook_constants.TRANSACTION_FIELD_CCY]}
                 holdings.loc[len(holdings)] = new_hold
 
         else:
 
-            if (t['Segno'] == 'A'):
-                new_amt = last_q + float(t['Quantita'].replace(",",""))
-                print("buy {} : {} + {} = {}".format(t['ticker'],last_q, t['Quantita'], new_amt ))
-                filtered_rows = holdings[holdings['ticker'] == t['ticker']]
+            if (t[notebook_constants.TRANSACTION_FIELD_BUY_SELL] == 'A'):
+                new_amt = last_q + float(t[notebook_constants.TRANSACTION_FIELD_QUANTITIY].replace(",",""))
+                print("buy {} : {} + {} = {}".format(t[notebook_constants.TRANSACTION_FIELD_TICKER],last_q, t[notebook_constants.TRANSACTION_FIELD_QUANTITIY], new_amt ))
+                filtered_rows = holdings[holdings['ticker'] == t[notebook_constants.TRANSACTION_FIELD_TICKER]]
                 last_row_index = filtered_rows.index[-1]
                 holdings.at[last_row_index, 'quantity'] = new_amt
-                #display(holdings[holdings['ticker'] == t['ticker']])
+                #display(holdings[holdings['ticker'] == t[notebook_constants.TRANSACTION_FIELD_TICKER]])
 
-            if (t['Segno'] == 'V'):
-                new_amt = last_q - float(t['Quantita'].replace(",",""))
-                print("sell {} : {} - {} = {}".format(t['ticker'],last_q, t['Quantita'], new_amt ))
-                filtered_rows = holdings[holdings['ticker'] == t['ticker']]
+            if (t[notebook_constants.TRANSACTION_FIELD_BUY_SELL] == 'V'):
+                new_amt = last_q - float(t[notebook_constants.TRANSACTION_FIELD_QUANTITIY].replace(",",""))
+                print("sell {} : {} - {} = {}".format(t[notebook_constants.TRANSACTION_FIELD_TICKER],last_q, t[notebook_constants.TRANSACTION_FIELD_QUANTITIY], new_amt ))
+                filtered_rows = holdings[holdings['ticker'] == t[notebook_constants.TRANSACTION_FIELD_TICKER]]
                 last_row_index = filtered_rows.index[-1]
                 holdings.at[last_row_index, 'quantity'] = new_amt
-                #display(holdings[holdings['ticker'] == t['ticker']])
+                #display(holdings[holdings['ticker'] == t[notebook_constants.TRANSACTION_FIELD_TICKER]])
 
         
-holdings.to_csv("../../reports/holdings.csv")
+holdings.to_csv(notebook_constants.DATA_FOLDER+notebook_constants.PORTFOLIO_HOLDINGS)
 
 
 
