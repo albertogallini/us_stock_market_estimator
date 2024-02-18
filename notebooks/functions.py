@@ -243,6 +243,7 @@ import numpy as np
 
 def compute_transaction_pnl(p: pd.DataFrame,  daycount:int, transactions : pd.DataFrame = None,) -> None:
      if transactions is not None :
+            
             holdings_date       = datetime.strptime(p.at[daycount,'date'], "%Y-%m-%d").date()
             monthstr = str(holdings_date.month)
             if len(monthstr) == 1 :
@@ -253,20 +254,31 @@ def compute_transaction_pnl(p: pd.DataFrame,  daycount:int, transactions : pd.Da
             holdings_datestr    = daystr+'/'+ monthstr+'/'+str(holdings_date.year)
             ticker_transactions = transactions[transactions[notebook_constants.TRANSACTION_FIELD_TR_DATE] == holdings_datestr ]
             transaction_value_open = 0
+            holds_pnl = p.at[daycount,'pnl']
             for _,t in ticker_transactions.iterrows():
-                transaction_value  = (t[notebook_constants.TRANSACTION_FIELD_QUANTITIY] * t[notebook_constants.TRANSACTION_FIELD_PRICE])
-                eod_mktvalue =  p.at[daycount,'mkt_value_eod'] 
-                if eod_mktvalue == 0:
-                    eod_mktvalue =  p.at[daycount,'mkt_value'] 
 
+                transaction_value  = (t[notebook_constants.TRANSACTION_FIELD_QUANTITIY] * t[notebook_constants.TRANSACTION_FIELD_PRICE])
+                eod_mktvalue       = (t[notebook_constants.TRANSACTION_FIELD_QUANTITIY] * p.at[daycount,'Close'] )
+                transaction_pnl    = 0
                 if (t[notebook_constants.TRANSACTION_FIELD_BUY_SELL] == 'A'):
                     transaction_value_open += transaction_value
-                    p.at[daycount,'pnl'] += eod_mktvalue  -  transaction_value
+                    transaction_pnl = (eod_mktvalue  -  transaction_value)
+                    p.at[daycount,'pnl'] += transaction_pnl
+                    transaction_type = ("Buy",transaction_value)
                 if (t[notebook_constants.TRANSACTION_FIELD_BUY_SELL] == 'V'):
-                    #transaction_value_open += transaction_value
-                    p.at[daycount,'pnl'] +=  transaction_value - eod_mktvalue
+                    #transaction_value_open -= transaction_value
+                    transaction_pnl = (transaction_value - eod_mktvalue)
+                    p.at[daycount,'pnl'] +=  transaction_pnl
+                    transaction_type = ("Sell",transaction_value)
 
-                print("{} -> transcation pnl detected: {} {}".format(ticker_transactions[notebook_constants.TRANSACTION_FIELD_TICKER].values[0],transaction_value,t[notebook_constants.TRANSACTION_FIELD_BUY_SELL]))
+                ticker = ticker_transactions[notebook_constants.TRANSACTION_FIELD_TICKER].values[0]
+                print("{} {} {} -> transcation pnl: {}  hold pnl {}  mvbod {}  trbasis {}".format(ticker,
+                                                                                           holdings_datestr,
+                                                                                           transaction_type,
+                                                                                           transaction_pnl,
+                                                                                           holds_pnl,
+                                                                                           p.at[daycount,'mkt_value_bod'],
+                                                                                           transaction_value_open))
             
             if p.at[daycount,'mkt_value_bod'] == 0 and not ticker_transactions.empty:
                 p.at[daycount,'mkt_value_bod'] = transaction_value_open
@@ -307,7 +319,10 @@ def compute_pnl(p: pd.DataFrame, transactions : pd.DataFrame = None) -> None:
 
 
 
-def plot_char(portfolio_performance_daily):    
+def plot_char(portfolio_performance_daily):
+    import matplotlib.pyplot as plt
+
+
     sc = 0
     portfolio_series = dict()
     metrics = ['pnl', 'mkt_value', 'mkt_value_bod', 'mkt_value_eod', 'r']
@@ -346,18 +361,31 @@ def plot_char(portfolio_performance_daily):
                                         notebook_constants.TRANSACTION_FIELD_QUANTITIY,
                                         notebook_constants.TRANSACTION_FIELD_TICKER]
                                         ]
-        
-        df = pd.DataFrame({ 't': portfolio_series['t'], m: portfolio_series[m]})
-        df.plot(figsize=(12,6),grid=True, x='t')        
-
-
         if m == 'r':
+            perc_ret = [ 100*(r-1) for r in portfolio_series[m]] 
+            df = pd.DataFrame({ 't': portfolio_series['t'], m: perc_ret})
+        else:
+            df = pd.DataFrame({ 't': portfolio_series['t'], m: portfolio_series[m]})
+        df.plot(figsize=(12,6),grid=True, x='t')     
+
+        if m == 'pnl': # accumultated pnl
+            acc_pnl = [0]
+            for i in range(1, len(portfolio_series[m])):
+                pp = acc_pnl[-1] + portfolio_series[m][i]
+                acc_pnl.append(pp)
+            df = pd.DataFrame({ 't': portfolio_series['t'], m: acc_pnl})
+            plt.plot(df['t'],
+                    df[m],
+                    label='acc. pnl', color='green')
+            plt.grid(True)
+            plt.xticks(np.arange(min(df['t']), max(df['t']) , 30))
+            plt.xticks(rotation=45)
+
+        if m == 'r': # accumultated returns 
             acc_r = [1] 
             for i in range(1, len(portfolio_series[m])):
                 pp = acc_r[-1] * portfolio_series[m][i]
                 acc_r.append(pp)
-
-            import matplotlib.pyplot as plt
 
             plt.figure(figsize=(20, 10))
             df = pd.DataFrame({ 't': portfolio_series['t'], m: acc_r})
@@ -372,6 +400,7 @@ def plot_char(portfolio_performance_daily):
             plt.xticks(np.arange(min(df['t']), max(df['t']) , 30))
             plt.xticks(rotation=45)
             
+            transactions_df = transactions_df[transactions_df[notebook_constants.TRANSACTION_FIELD_TICKER].apply(lambda t : t in list(portfolio_performance_daily.ticker.values))]
             r_count = 0
             transactions_df[notebook_constants.TRANSACTION_FIELD_TR_DATE] = transactions_df[notebook_constants.TRANSACTION_FIELD_TR_DATE].apply(lambda d: datetime.strptime(d, "%d/%m/%Y").date())
             transactions_df = transactions_df.sort_values(by=[notebook_constants.TRANSACTION_FIELD_TR_DATE])
@@ -384,7 +413,7 @@ def plot_char(portfolio_performance_daily):
                 eventset = set()
         
                 for i  in range(len(event_types)):
-                    spread += abs(spread) + 0.1
+                    spread += abs(spread) + 0.01
                     if (event_types[i],event_source[i]) in eventset:
                         continue
                     eventset.add((event_types[i],event_source[i]))
