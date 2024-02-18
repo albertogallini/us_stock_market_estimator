@@ -4,11 +4,11 @@
         "id": "1"
     },
     {
-        "stocks": ["META","PFIE","GOOGL"],
+        "stocks": ["META","PFIE","GOOGL","PLTR"],
         "id": "2"
     },
     {
-        "stocks": ["WM","HEI","DDOG"],
+        "stocks": ["WM","HEI","DDOG","SMCI"],
         "id": "3"
     },
     {

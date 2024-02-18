@@ -35,7 +35,7 @@ class SequentialModel1StockMultiFactor(SequentialModel1StockAndRates):
                 lookback : int  = 14,
                 epochs : int = 32,
                 training_percentage : float = 0.90,
-                use_lstm : bool = False,
+                use_lstm : bool = True,
                 logger: logging.Logger = None ) :
         
         if (logger == None):

@@ -9,7 +9,7 @@ from openfigipy import OpenFigiClient
 
 def get_ticker(isin):
     try:
-        time.sleep(5)
+        time.sleep(1)
         ofc = OpenFigiClient()
         ofc.connect()  # Establish a requests session
 
@@ -28,14 +28,29 @@ def get_ticker(isin):
             return ""
 
 
-def generate_transaction_file():
-    transactions = pd.read_csv(notebook_constants.DATA_FOLDER+notebook_constants.TRANSACTION_FILE)
-    assets = pd.DataFrame(columns=['ISIN']) 
-    assets['ISIN']   = transactions['ISIN'].unique()
-    assets['ticker'] = assets['ISIN'].apply(lambda n : get_ticker(n))
-    assets.to_csv(notebook_constants.DATA_FOLDER+notebook_constants.PORTFOLIO_ASSETS_FILE)
-    transactions = transactions.merge(assets, on='ISIN', how='left')
-    transactions.to_csv(notebook_constants.DATA_FOLDER+notebook_constants.TRANSACTION_FILE_TICKERS)
+
+def load_fineco_transaction_file (path:str) -> pd.DataFrame :
+    df = pd.read_excel('./../file.xls')
+    # Use row 5 as column names
+    df.columns = df.iloc[4]  # Access row 5 (index 4) for column names
+    # Remove row 5 after using it for column names
+    df = df.iloc[5:]  
+    return df
+
+
+
+def generate_transaction_file(path:str = "./file.xls"):
+    try:
+        transactions = load_fineco_transaction_file(path)
+        transactions.to_csv(notebook_constants.DATA_FOLDER+notebook_constants.TRANSACTION_FILE)
+        assets = pd.DataFrame(columns=['ISIN']) 
+        assets['ISIN']   = transactions['ISIN'].unique()
+        assets['ticker'] = assets['ISIN'].apply(lambda n : get_ticker(n))
+        assets.to_csv(notebook_constants.DATA_FOLDER+notebook_constants.PORTFOLIO_ASSETS_FILE)
+        transactions = transactions.merge(assets, on='ISIN', how='left')
+        transactions.to_csv(notebook_constants.DATA_FOLDER+notebook_constants.TRANSACTION_FILE_TICKERS)
+    except Exception as e:
+        print("Error in loading the transactions: {}".format(e))
 
 
 import pandas as pd
@@ -71,7 +86,7 @@ def  generate_holdings():
                     new_hold = {'ticker': t[notebook_constants.TRANSACTION_FIELD_TICKER],
                                 'isin':   t[notebook_constants.TRANSACTION_FIELD_ISIN],
                                 'date':   t[notebook_constants.TRANSACTION_FIELD_DATE],
-                                'quantity':last_q+float(t[notebook_constants.TRANSACTION_FIELD_QUANTITIY].replace(",","")),
+                                'quantity':last_q+float(t[notebook_constants.TRANSACTION_FIELD_QUANTITIY]),
                                 'ccy':    t[notebook_constants.TRANSACTION_FIELD_CCY]}
                     holdings.loc[len(holdings)] = new_hold
                 
@@ -79,14 +94,14 @@ def  generate_holdings():
                     new_hold = {'ticker': t[notebook_constants.TRANSACTION_FIELD_TICKER],
                                 'isin':   t[notebook_constants.TRANSACTION_FIELD_ISIN],
                                 'date':   t[notebook_constants.TRANSACTION_FIELD_DATE],
-                                'quantity':last_q-float(t[notebook_constants.TRANSACTION_FIELD_QUANTITIY].replace(",","")),
+                                'quantity':last_q-float(t[notebook_constants.TRANSACTION_FIELD_QUANTITIY]),
                                 'ccy':    t[notebook_constants.TRANSACTION_FIELD_CCY]}
                     holdings.loc[len(holdings)] = new_hold
 
             else:
 
                 if (t[notebook_constants.TRANSACTION_FIELD_BUY_SELL] == 'A'):
-                    new_amt = last_q + float(t[notebook_constants.TRANSACTION_FIELD_QUANTITIY].replace(",",""))
+                    new_amt = last_q + float(t[notebook_constants.TRANSACTION_FIELD_QUANTITIY])
                     print("buy {} : {} + {} = {}".format(t[notebook_constants.TRANSACTION_FIELD_TICKER],last_q, t[notebook_constants.TRANSACTION_FIELD_QUANTITIY], new_amt ))
                     filtered_rows = holdings[holdings['ticker'] == t[notebook_constants.TRANSACTION_FIELD_TICKER]]
                     last_row_index = filtered_rows.index[-1]
@@ -94,7 +109,7 @@ def  generate_holdings():
                     #display(holdings[holdings['ticker'] == t[notebook_constants.TRANSACTION_FIELD_TICKER]])
 
                 if (t[notebook_constants.TRANSACTION_FIELD_BUY_SELL] == 'V'):
-                    new_amt = last_q - float(t[notebook_constants.TRANSACTION_FIELD_QUANTITIY].replace(",",""))
+                    new_amt = last_q - float(t[notebook_constants.TRANSACTION_FIELD_QUANTITIY])
                     print("sell {} : {} - {} = {}".format(t[notebook_constants.TRANSACTION_FIELD_TICKER],last_q, t[notebook_constants.TRANSACTION_FIELD_QUANTITIY], new_amt ))
                     filtered_rows = holdings[holdings['ticker'] == t[notebook_constants.TRANSACTION_FIELD_TICKER]]
                     last_row_index = filtered_rows.index[-1]
@@ -182,7 +197,7 @@ def unroll_daily_holdings():
 
 import pandas as pd
 import datetime as dt
-from datetime import datetime
+from datetime import datetime, timedelta
 from price_estimator import const_and_utils
 
 def fetch_prices(portfolio: pd.DataFrame, mode:str = 'offline') -> None:
@@ -199,17 +214,21 @@ def fetch_prices(portfolio: pd.DataFrame, mode:str = 'offline') -> None:
             else:
                 ticker_dates = portfolio[portfolio['ticker'] == ticker]['date'].values
                 start_date = ticker_dates[0]
-                end_date = ticker_dates[len(ticker_dates)]
+                end_date = ticker_dates[len(ticker_dates)-1]
                 tickerData = yf.Ticker(ticker)
-                ticker_prices =  tickerData.history(period='1d', start=start_date, end=end_date)
-
+                if "quoteType" in tickerData.info:
+                     print("Quote type : {}".format(tickerData.info["quoteType"]))
+                if tickerData.info["quoteType"] != 'EQUITY':
+                    continue
+                ticker_prices =  tickerData.history(period='1d', start=start_date, end=end_date+timedelta(days=1))
+                ticker_prices.reset_index(inplace=True)
 
             t_p = ticker_prices[["Date","Close","Dividends"]].rename(columns={'Date':'date'})
             t_p['date'] = t_p.date.apply(lambda d : pd.to_datetime(d).date())
             positions = portfolio[portfolio['ticker'] == ticker]
             portoflio_and_market_data[ticker] = positions.merge(t_p, on='date', how='left')
         except Exception as e:
-            print(" Ticker [{}]  --> price not found: {}".format(ticker, e))
+            print(" Ticker [{}]  -->error in fetching price {}".format(ticker, e))
             continue
 
     for pos in portoflio_and_market_data.items():    
@@ -221,27 +240,67 @@ import datetime as dt
 from datetime import datetime
 import numpy as np 
 
-def compute_pnl(p: pd.DataFrame) -> None:
+
+def compute_transaction_pnl(p: pd.DataFrame,  daycount:int, transactions : pd.DataFrame = None,) -> None:
+     if transactions is not None :
+            holdings_date       = datetime.strptime(p.at[daycount,'date'], "%Y-%m-%d").date()
+            monthstr = str(holdings_date.month)
+            if len(monthstr) == 1 :
+                monthstr = '0'+ monthstr
+            daystr   = str(holdings_date.day)
+            if len(daystr) == 1 :
+                daystr = '0'+ daystr
+            holdings_datestr    = daystr+'/'+ monthstr+'/'+str(holdings_date.year)
+            ticker_transactions = transactions[transactions[notebook_constants.TRANSACTION_FIELD_TR_DATE] == holdings_datestr ]
+            transaction_value_open = 0
+            for _,t in ticker_transactions.iterrows():
+                transaction_value  = (t[notebook_constants.TRANSACTION_FIELD_QUANTITIY] * t[notebook_constants.TRANSACTION_FIELD_PRICE])
+                eod_mktvalue =  p.at[daycount,'mkt_value_eod'] 
+                if eod_mktvalue == 0:
+                    eod_mktvalue =  p.at[daycount,'mkt_value'] 
+
+                if (t[notebook_constants.TRANSACTION_FIELD_BUY_SELL] == 'A'):
+                    transaction_value_open += transaction_value
+                    p.at[daycount,'pnl'] += eod_mktvalue  -  transaction_value
+                if (t[notebook_constants.TRANSACTION_FIELD_BUY_SELL] == 'V'):
+                    #transaction_value_open += transaction_value
+                    p.at[daycount,'pnl'] +=  transaction_value - eod_mktvalue
+
+                print("{} -> transcation pnl detected: {} {}".format(ticker_transactions[notebook_constants.TRANSACTION_FIELD_TICKER].values[0],transaction_value,t[notebook_constants.TRANSACTION_FIELD_BUY_SELL]))
+            
+            if p.at[daycount,'mkt_value_bod'] == 0 and not ticker_transactions.empty:
+                p.at[daycount,'mkt_value_bod'] = transaction_value_open
+
+
+def compute_pnl(p: pd.DataFrame, transactions : pd.DataFrame = None) -> None:
     daycount = 0
     p['Close'].ffill(inplace=True)
     p['quantity'].ffill(inplace=True)
     p['Dividends'].replace(to_replace=np.NaN, value=0., inplace=True)
+
+    
     
 
     for r in p.iterrows():
         if daycount == 0:
-            p['mkt_value']     = None
-            p['mkt_value_bod'] = None
-            p['mkt_value_eod'] = None
-            p['pnl']           = None
-            p['r']             = None
+            p['mkt_value']     = float(p.at[daycount,'quantity'])  *  p.at[daycount,'Close'] 
+            p['mkt_value_bod'] = 0
+            p['mkt_value_eod'] = 0
+            p['pnl']           = 0
+            p['r']             = 1
+            compute_transaction_pnl(p,daycount,transactions)
             daycount += 1
             continue
         p.at[daycount,'mkt_value']     = float(p.at[daycount,'quantity'])  *  p.at[daycount,'Close']    
         p.at[daycount,'mkt_value_bod'] = float(p.at[daycount-1,'quantity'])  *  p.at[daycount-1,'Close']
-        p.at[daycount,'mkt_value_eod'] = p.loc[daycount-1,'quantity'] * (  p.at[daycount,'Close'] +  p.at[daycount,'Close'] *  p.at[daycount,'Dividends'])
+        p.at[daycount,'mkt_value_eod'] = p.loc[daycount-1,'quantity'] * (  p.at[daycount,'Close'] +  p.at[daycount,'Dividends'])
         p.at[daycount,'pnl'] = p.loc[daycount,'mkt_value_eod'] - p.loc[daycount,'mkt_value_bod']
-        p.at[daycount,'r'] = (p.loc[daycount,'pnl'] / p.loc[daycount,'mkt_value_bod']) + 1
+        if (p.loc[daycount,'mkt_value_bod']) != 0:
+            p.at[daycount,'r'] = (p.loc[daycount,'pnl'] / p.loc[daycount,'mkt_value_bod']) + 1
+        else:
+            p.at[daycount,'r'] = 1
+
+        compute_transaction_pnl(p,daycount,transactions)
         daycount += 1
 
     return p
@@ -264,7 +323,11 @@ def plot_char(portfolio_performance_daily):
             if not s.empty:
                 if m == 'r':
                     portfolio_series['t'].append(d)
-                    portfolio_series[m].append(sum(s['pnl']) / sum(s['mkt_value_bod']) +1)
+                    denom = sum(s['mkt_value_bod'])
+                    if (denom != 0):
+                        portfolio_series[m].append(sum(s['pnl']) / sum(s['mkt_value_bod']) +1)
+                    else:
+                        portfolio_series[m].append(1)
                 else:
                     portfolio_series[m].append(sum(s[m]))
             else:
@@ -306,7 +369,7 @@ def plot_char(portfolio_performance_daily):
 
 
             plt.grid(True)
-            plt.xticks(np.arange(min(df['t']), max(df['t']) , 90))
+            plt.xticks(np.arange(min(df['t']), max(df['t']) , 30))
             plt.xticks(rotation=45)
             
             r_count = 0
@@ -316,10 +379,12 @@ def plot_char(portfolio_performance_daily):
                 event_types = transactions_df[transactions_df[notebook_constants.TRANSACTION_FIELD_TR_DATE] == event_date][notebook_constants.TRANSACTION_FIELD_BUY_SELL].values
                 event_source = transactions_df[transactions_df[notebook_constants.TRANSACTION_FIELD_TR_DATE] == event_date][notebook_constants.TRANSACTION_FIELD_TICKER].values
                 event_color = 'green'
-                spread = 0.5
+                spread = 0.1
                 event_type_lbl =""
                 eventset = set()
+        
                 for i  in range(len(event_types)):
+                    spread += abs(spread) + 0.1
                     if (event_types[i],event_source[i]) in eventset:
                         continue
                     eventset.add((event_types[i],event_source[i]))
@@ -328,13 +393,14 @@ def plot_char(portfolio_performance_daily):
                     if event_types[i] == 'V':
                         event_type_lbl ='S(' + str(event_source[i]) + ')\n'
                         event_color = 'red'
-                        spread = -0.5
+
+                    
 
                     plt.text(event_date,
                             df[df['t']==event_date]['r'].values[0] + spread,
                             event_type_lbl,
                             color=event_color, 
-                            fontsize=5,
+                            fontsize=7,
                             horizontalalignment='center',
                             verticalalignment='top')
                     
@@ -346,7 +412,7 @@ def plot_char(portfolio_performance_daily):
             plt.title('Accumulated returns')
             plt.xlabel('t')
             plt.ylabel('r')
-            plt.legend()
+            #plt.legend()
             plt.show()
 
 

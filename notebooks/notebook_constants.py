@@ -18,6 +18,7 @@ DAILY_HOLDINGS_PREFIX    = 'daily_holdings_and_prices'
 
 TRANSACTION_FIELD_BUY_SELL    = 'Segno'
 TRANSACTION_FIELD_QUANTITIY   = 'Quantita'
+TRANSACTION_FIELD_PRICE       = 'Prezzo'
 TRANSACTION_FIELD_CCY         = 'Divisa'
 TRANSACTION_FIELD_TICKER      = 'ticker'
 TRANSACTION_FIELD_ISIN        = 'ISIN'

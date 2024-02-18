@@ -21,7 +21,11 @@ from openfigipy import OpenFigiClient
 
 if len(sys.argv) > 2 and sys.argv[1] == 'LT':
     print("Load Transactions Data ...")
-    generate_transaction_file()
+    if ( len(sys.argv) > 3 and len(sys.argv[3]) > 0 ):
+        generate_transaction_file(sys.argv[3])
+    else:
+        generate_transaction_file()
+
     transactions = pd.read_csv(notebook_constants.DATA_FOLDER+notebook_constants.TRANSACTION_FILE_TICKERS)
     transactions['Date'] = transactions.Operazione.apply(lambda d : datetime.strptime(d, "%d/%m/%Y"))
     transactions.sort_values(by=['Date'])
@@ -50,9 +54,21 @@ prefix = notebook_constants.DAILY_HOLDINGS_PREFIX
 portfolio_dir = notebook_constants.DATA_FOLDER
 files = [filename for filename in os.listdir(portfolio_dir) if filename.startswith(prefix)]
 portfolio_performance_daily = None
+
+transactions    =  pd.read_csv(notebook_constants.DATA_FOLDER+notebook_constants.TRANSACTION_FILE_TICKERS)
+transactions_df =  transactions[ [notebook_constants.TRANSACTION_FIELD_TR_DATE,
+                                    notebook_constants.TRANSACTION_FIELD_BUY_SELL,
+                                    notebook_constants.TRANSACTION_FIELD_QUANTITIY,
+                                    notebook_constants.TRANSACTION_FIELD_PRICE,
+                                    notebook_constants.TRANSACTION_FIELD_TICKER]
+                                    ]    
+
 print("Loading position files ...")
-for f in files:    
-    position_performance_daily  = compute_pnl(pd.read_csv(portfolio_dir+f))
+for f in files:
+    ticker_transactions = transactions_df[transactions_df.ticker == f.replace(prefix,"").replace(".csv","")]
+    position_performance_daily  = compute_pnl(pd.read_csv(portfolio_dir+f), ticker_transactions)
     portfolio_performance_daily = pd.concat([position_performance_daily,portfolio_performance_daily], ignore_index=True)        
+
+portfolio_performance_daily.to_csv("ppd.csv")
         
 plot_char(portfolio_performance_daily)
