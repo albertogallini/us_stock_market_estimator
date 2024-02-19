@@ -85,7 +85,7 @@ if __name__ == '__main__':
         logger.info('Fetching USD 10Y Inflation ')
         print('Fetching USD 10Y Inflation ')  
         irf = InflationFetcher()
-        infl10y_rates = irf.get_inflation10y()
+        infl10y_rates = irf.get_inflation()
         infl10y_rates.to_csv(FOLDER_MARKET_DATA + FILE_NAME_INFLATION)
         logger.debug(infl10y_rates)
         

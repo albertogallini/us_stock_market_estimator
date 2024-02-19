@@ -35,7 +35,7 @@ class SequentialModel1StockMultiFactor(SequentialModel1StockAndRates):
                 lookback : int  = 14,
                 epochs : int = 32,
                 training_percentage : float = 0.90,
-                use_lstm : bool = True,
+                use_lstm : bool = False,
                 logger: logging.Logger = None ) :
         
         if (logger == None):
@@ -107,7 +107,7 @@ class SequentialModel1StockMultiFactor(SequentialModel1StockAndRates):
         self.df = fill_value('10 Yr',self.df)
         self.df = fill_value('5 Yr',self.df)
         self.df = fill_value('1 Yr',self.df)
-        self.df = fill_value('infl10',self.df)
+        self.df = fill_value('inflation',self.df)
         self.df = fill_value('Fear Greed',self.df)
 
          # clean up Scores data :
@@ -133,7 +133,7 @@ class SequentialModel1StockMultiFactor(SequentialModel1StockAndRates):
         self.df['10 Yr']  = (( self.df['10 Yr'] -  self.df['10 Yr'].min())   / ( self.df['10 Yr'].max()  -  self.df['10 Yr'].min()))   * 1
 
 
-        self.df['infl10'] = (( self.df['infl10'] -  self.df['infl10'].min())   / ( self.df['infl10'].max()  -  self.df['infl10'].min()))  * 1
+        self.df['inflation'] = (( self.df['inflation'] -  self.df['inflation'].min())   / ( self.df['inflation'].max()  -  self.df['inflation'].min()))  * 1
 
         self.df['Fear Greed'] = (( self.df['Fear Greed'] -  self.df['Fear Greed'].min())   / ( self.df['Fear Greed'].max()  -  self.df['Fear Greed'].min()))  * 1
         self.df['Scores'] = (( self.df['Scores'] -  self.df['Scores'].min())   / ( self.df['Scores'].max()  -  self.df['Scores'].min()))  * 1
@@ -149,7 +149,7 @@ class SequentialModel1StockMultiFactor(SequentialModel1StockAndRates):
 
 
         # input factor list:
-        self.calibration_factors_list = ['Close', 'Volume','3 Mo','1 Yr','5 Yr','10 Yr','infl10'] + list(self.index_sub_sector_price.keys())
+        self.calibration_factors_list = ['Close', 'Volume','3 Mo','1 Yr','5 Yr','10 Yr','inflation'] + list(self.index_sub_sector_price.keys())
         self.sentiment_factors_list   = ['Fear Greed','Scores'] 
 
         if (self.df.empty):
@@ -425,8 +425,8 @@ def check_data_correlation(input_file:str, rates = True, indexes = False, fng = 
         sm1s.df_not_normalized.plot(kind="scatter",  x="rtn", y='10Yrtn', color = "red")
 
     if (inflation):
-        sm1s.df_not_normalized.plot(kind="scatter",  x="Close", y='infl10', color = "red")
-        sm1s.df_not_normalized['infl10rtn'] = sm1s.df_not_normalized['infl10'].pct_change()
+        sm1s.df_not_normalized.plot(kind="scatter",  x="Close", y='inflation', color = "red")
+        sm1s.df_not_normalized['infl10rtn'] = sm1s.df_not_normalized['inflation'].pct_change()
         sm1s.df_not_normalized.plot(kind="scatter",  x="rtn", y='infl10rtn', color = "red")
 
     if(indexes):
