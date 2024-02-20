@@ -1,14 +1,14 @@
 [
     {
-        "stocks": ["IONQ","UFPT","NVTS"],
+        "stocks": ["IONQ","NVTS"],
         "id": "1"
     },
     {
-        "stocks": ["META","PFIE","GOOGL"],
+        "stocks": ["META"],
         "id": "2"
     },
     {
-        "stocks": ["WM","HEI","DDOG"],
+        "stocks": ["WM"],
         "id": "3"
     }
 ]

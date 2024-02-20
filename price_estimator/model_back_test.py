@@ -23,7 +23,7 @@ import logging
 import os
 
 
-def show_prediction_vs_actual_pdf(predictions : list, scenarios: int, models:list):
+def show_prediction_vs_actual_pdf(predictions : list, prediction_quality:list, scenarios: int, models:list):
     from matplotlib.backends.backend_pdf import PdfPages
     from const_and_utils import FOLDER_REPORD_PDF
     pdf_pages = PdfPages(FOLDER_REPORD_PDF+'back_tester_batch.pdf')
@@ -33,11 +33,17 @@ def show_prediction_vs_actual_pdf(predictions : list, scenarios: int, models:lis
     for page in range(num_pages): # pages
         fig, ax = plt.subplots(2, num_charts_per_page // 2)
         for canvas in range(0, num_charts_per_page): # chart per page
+            
+            prediction_index = (page*num_charts_per_page*scenarios)+(canvas*scenarios)
+            if prediction_index < len(prediction_quality):
+                best_prediction  = (prediction_index,prediction_quality[prediction_index])
+
             for s in range(scenarios): # scenario per chart 
                 p_index  = (page*num_charts_per_page*scenarios)+(canvas*scenarios)+s   
                 if p_index < len(predictions):
                     p = predictions[p_index]
                     pp = []
+                   
                     for pr in p:
                         pp.append(pr[0])
                     df = pd.DataFrame({ 'Distance':abs(models[p_index].y_test- pp)/pp})
@@ -57,8 +63,14 @@ def show_prediction_vs_actual_pdf(predictions : list, scenarios: int, models:lis
                     y_labels =  ax[canvas % 2, canvas // 2].get_yticks().tolist()
                     y_labels = [ "{:.2f}".format(y) for y in y_labels]
                     ax[canvas % 2, canvas // 2].set_yticklabels(y_labels,fontsize=3)
+
+                    if best_prediction[1] < prediction_quality[prediction_index]:
+                        best_prediction = (prediction_index,prediction_quality[prediction_index]) 
+                    prediction_index +=1
                 else:
                     continue
+            models[best_prediction[0]].save_model(path = FOLDER_MODEL_STORAGE, scenario_id="_")
+
         pdf_pages.savefig(fig)
         plt.close(fig)
                 
@@ -66,7 +78,7 @@ def show_prediction_vs_actual_pdf(predictions : list, scenarios: int, models:lis
     pdf_pages.close()
 
 
-def show_prediction_vs_actual_mult(predictions : list, ticker:str, sm1s:SequentialModel1Stock):
+def show_prediction_vs_actual_mult(predictions : list, prediction_quality:list, ticker:str, models:list):
         from matplotlib.ticker import FixedLocator
         import matplotlib.colors as mcolors
         
@@ -74,10 +86,11 @@ def show_prediction_vs_actual_mult(predictions : list, ticker:str, sm1s:Sequenti
         # Plot the actual prices and the predicted prices
         # plt.switch_backend('QtAgg')  # For QtAgg backend
         fig, axs = plt.subplots(3)
-        if(sm1s.y_test.ndim > 1):
-            axs[0].plot(sm1s.test_time, sm1s.y_test[:,0], color='blue', label='Actual prices')
+        a_model = models[0]
+        if(a_model.y_test.ndim > 1):
+            axs[0].plot(a_model.test_time, a_model.y_test[:,0], color='blue', label='Actual prices')
         else:
-            axs[0].plot(sm1s.test_time, sm1s.y_test, color='blue', label='Actual prices')
+            axs[0].plot(a_model.test_time, a_model.y_test, color='blue', label='Actual prices')
 
         
         for p in predictions:
@@ -87,7 +100,7 @@ def show_prediction_vs_actual_mult(predictions : list, ticker:str, sm1s:Sequenti
                 # For each column, shift the elements down by the column index and set the first element(s) to 0
                 for i, col in enumerate(pt):
                     na   = col
-                    time = sm1s.test_time
+                    time = a_model.test_time
                     for j in range (0,i):
                          na   = np.append(na,np.nan)
                          time = np.append(time," ---- + " + str(j))
@@ -101,13 +114,12 @@ def show_prediction_vs_actual_mult(predictions : list, ticker:str, sm1s:Sequenti
                         axs[0].plot(time, na, color="red")
             else:
                 axs[0].grid(which='both', linestyle='--')
-                axs[0].plot(sm1s.test_time, p, alpha = 0.7)
+                axs[0].plot(a_model.test_time, p, alpha = 0.7)
         
-        axs[1].scatter(sm1s.y_test, sm1s.y_test, label='actual values', color='blue', s=2)
+        axs[1].scatter(a_model.y_test, a_model.y_test, label='actual values', color='blue', s=2)
         
-        
-        
-        
+        prediction_index = 0
+        best_prediction  = (0,prediction_quality[0]) 
         for p in predictions:
             
             if (len(p[0]) > 1 ):
@@ -118,14 +130,14 @@ def show_prediction_vs_actual_mult(predictions : list, ticker:str, sm1s:Sequenti
                     pt[i] = np.roll(col, i)
                     pt[i][:i] = np.nan
                 for i, col in enumerate(pt):
-                    axs[1].scatter(sm1s.y_test.T[0], pt[i], color='red', s=2)
+                    axs[1].scatter(a_model.y_test.T[0], pt[i], color='red', s=2)
             else:
-                axs[1].scatter(sm1s.y_test, p, color='red', s=2)
+                axs[1].scatter(a_model.y_test, p, color='red', s=2)
                 
                 pp = []
                 for pr in p:
                     pp.append(pr[0])
-                df = pd.DataFrame({ 'Distance':abs(sm1s.y_test- pp)/pp})
+                df = pd.DataFrame({ 'Distance':abs(a_model.y_test- pp)/pp})
                 thresholds = np.arange(0.0,0.2,0.0001)
                 percentages = []
                 for threshold in thresholds:
@@ -135,10 +147,15 @@ def show_prediction_vs_actual_mult(predictions : list, ticker:str, sm1s:Sequenti
                 axs[2].grid(which='both', linestyle='--')
                 axs[2].plot(thresholds,percentages, alpha = 0.7)
                 axs[2].fill_between(thresholds, 0, percentages)
-                axs[2].set_title("'est. error < %' dist. density. Price vol = {:.2f} , Actual lookback = {}".format(sm1s.df['Close'].std(),sm1s.lookback))
-            
+                axs[2].set_title("'est. error < %' dist. density. Price vol = {:.2f} , Actual lookback = {}".format(a_model.df['Close'].std(),a_model.lookback))
+                if best_prediction[1] < prediction_quality[prediction_index]:
+                    best_prediction = (prediction_index,prediction_quality[prediction_index]) 
+                prediction_index +=1
+
+        models[best_prediction[0]].save_model(path = FOLDER_MODEL_STORAGE, scenario_id="_")
+
         axs[0].set_title('Actual vs Predicted Prices ' + str(ticker) )     
-        axs[0].set_xticklabels(sm1s.test_time,fontsize=5, rotation = 90)
+        axs[0].set_xticklabels(a_model.test_time,fontsize=5, rotation = 90)
     
         
         plt.show()
@@ -172,7 +189,26 @@ def back_test(args: tuple):
         prediction_model.plot_model()
         prediction_model.compute_predictions(denormalize = True)
 
-        return prediction_model.predictions, prediction_model
+        # Evaluate probability density
+        pp = []
+        prediction_quality= []
+        for pr in prediction_model.predictions:
+            pp.append(pr[0])
+            if len(pp) != len(prediction_model.y_test) : 
+                continue
+            df = pd.DataFrame({ 'Distance':abs(prediction_model.y_test- pp)/pp})
+            thresholds = np.arange(0.0,0.2,0.0001)
+            percentages = []
+            for threshold in thresholds:
+                below_threshold_mask = df['Distance'] < threshold
+                below_threshold = df[below_threshold_mask]
+                percentages.append(below_threshold.shape[0]/ df.shape[0])    
+            integral_value =  sum(a * b for a, b in zip(thresholds, percentages))
+            prediction_quality.append(integral_value)
+        print("scenario {} probability density value = {}".format(scenario_id,integral_value))
+
+
+        return prediction_model.predictions, prediction_quality, prediction_model
 
     except Exception as e:
             print("Caught an exception: ", e)
@@ -220,9 +256,9 @@ def main():
                         print(params)
                         results = pool.map(back_test, params)
                         results = [r  for r in results if r != None]
-                        predictions, models = zip(*results) 
+                        predictions,prediction_quality,models = zip(*results) 
 
-                    show_prediction_vs_actual_pdf(predictions, int(sys.argv[2]), models)
+                    show_prediction_vs_actual_pdf(predictions,prediction_quality, int(sys.argv[2]), models)
 
             else:
                 file_name = FOLDER_MARKET_DATA + PREFIX_PRICE_FETCHER + subject +".csv"
@@ -232,9 +268,9 @@ def main():
                     params = [(file_name, None, i, model_class, training_percentage) for i in range(int(sys.argv[2]))]
                     print(params)
                     results = pool.map(back_test, params)
-                    predictions, model = zip(*results)
+                    predictions, prediction_quality, models= zip(*results)
 
-                show_prediction_vs_actual_mult(predictions,get_ticker(file_name),model[0])
+                show_prediction_vs_actual_mult(predictions,prediction_quality,get_ticker(file_name),models)
             
             
 

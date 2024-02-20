@@ -11,6 +11,7 @@ FILE_NAME_FNG                   = "fear_and_greed.csv"
 
 FOLDER_MARKET_DATA              = "/Volumes/data/"
 FOLDER_REPORD_PDF               = "/Volumes/reports/"
+FOLDER_MODEL_STORAGE            = "/Volumes/reports/models/"
 
 
 def init_config(cfg_file: str = "config.json" ) -> None:
