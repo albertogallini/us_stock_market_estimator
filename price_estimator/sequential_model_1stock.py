@@ -207,26 +207,15 @@ class SequentialModel1Stock:
         
     def save_model(self, path: str, scenario_id: str):
         print("Save Model")
-        print(path+"calibration_"+self.ticker[0]+"_"+scenario_id+".model")
-        print(path+"calibration_"+self.ticker[0]+"_"+scenario_id+".rfactors")
-        
-        self.model.save(path+"calibration_"+self.ticker[0]+"_"+scenario_id+".model")
-        df= pd.DataFrame({"price_denormalization_factor":[self.price_denormalization_factor],
-                          "price_denormalization_sum"   :[self.price_denormalization_sum]
-                          } )
-        df.to_csv(path+"calibration_"+self.ticker[0]+"_"+scenario_id+".rfactors")
-        
+        print(path+PREFIX_MODEL_TRAINING+self.ticker[0]+"__"+scenario_id+".model")
+        print(path+PREFIX_MODEL_TRAINING+self.ticker[0]+"__"+scenario_id+".rfactors")
+        self.model.save(path+PREFIX_MODEL_TRAINING+self.ticker[0]+"__"+scenario_id+".model")
         
     def load_model(self, path: str, scenario_id: str):
         print("Load Model")
-        print(path+"calibration_"+self.ticker[0]+"_"+scenario_id+".model")
-        print(path+"calibration_"+self.ticker[0]+"_"+scenario_id+".rfactors")
-
-
-        self.model = tf.keras.models.load_model(path+"calibration_"+self.ticker[0]+"_"+scenario_id+".model")
-        df = pd.read_csv(path+"calibration_"+self.ticker[0]+"_"+scenario_id+".rfactors")
-        self.price_denormalization_factor = df.price_denormalization_factor[0]
-        self.price_denormalization_sum    = df.price_denormalization_sum[0]
+        print(path+PREFIX_MODEL_TRAINING+self.ticker[0]+"__"+scenario_id+".model")
+        print(path+PREFIX_MODEL_TRAINING+self.ticker[0]+"__"+scenario_id+".rfactors")
+        self.model = tf.keras.models.load_model(path+PREFIX_MODEL_TRAINING+self.ticker[0]+"__"+scenario_id+".model")
 
     
     def plot_model(self, file_name:str = 'model.png'):
