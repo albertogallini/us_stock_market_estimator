@@ -63,10 +63,18 @@ def load_models_and_compute_estimate(ticker_list : list , input_data_dir: str,  
     for ticker_index in range (0, len(ticker_list)): 
         
         try:
+            
+            '''
+             as the model is precalibrated the traning percentage here is only used to determine 
+             the lenght of the prediction time-frame. It won't affect the model performance. 
+            '''
             sm1s = SequentialModel1StockMultiFactor(input_data_price_csv      = input_data_file[ticker_index],
                                                      input_data_rates_csv     = FOLDER_MARKET_DATA + FILE_NAME_RATES,
-                                                     input_fear_and_greed_csv = FOLDER_MARKET_DATA + FILE_NAME_FNG) 
+                                                     input_fear_and_greed_csv = FOLDER_MARKET_DATA + FILE_NAME_FNG,
+                                                     training_percentage      = 0.98)  
+            
             sm1s.load_model(path=FOLDER_MODEL_STORAGE,scenario_id="")
+
         except Exception as e:
             print("Caught an exception: ", e)
             print("Error in loading pre-trained model for " + input_data_file[ticker_index] )

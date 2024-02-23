@@ -30,7 +30,7 @@ def get_ticker(isin):
 
 
 def load_fineco_transaction_file (path:str) -> pd.DataFrame :
-    df = pd.read_excel('./../file.xls')
+    df = pd.read_excel(path)
     # Use row 5 as column names
     df.columns = df.iloc[4]  # Access row 5 (index 4) for column names
     # Remove row 5 after using it for column names
@@ -254,6 +254,7 @@ def compute_transaction_pnl(p: pd.DataFrame,  daycount:int, transactions : pd.Da
             holdings_datestr    = daystr+'/'+ monthstr+'/'+str(holdings_date.year)
             ticker_transactions = transactions[transactions[notebook_constants.TRANSACTION_FIELD_TR_DATE] == holdings_datestr ]
             transaction_value_open = 0
+            transaction_value_open_inflow = 0
             holds_pnl = p.at[daycount,'pnl']
             for _,t in ticker_transactions.iterrows():
 
@@ -262,11 +263,12 @@ def compute_transaction_pnl(p: pd.DataFrame,  daycount:int, transactions : pd.Da
                 transaction_pnl    = 0
                 if (t[notebook_constants.TRANSACTION_FIELD_BUY_SELL] == 'A'):
                     transaction_value_open += transaction_value
+                    transaction_value_open_inflow +=  transaction_value
                     transaction_pnl = (eod_mktvalue  -  transaction_value)
                     p.at[daycount,'pnl'] += transaction_pnl
                     transaction_type = ("Buy",transaction_value)
                 if (t[notebook_constants.TRANSACTION_FIELD_BUY_SELL] == 'V'):
-                    #transaction_value_open -= transaction_value
+                    transaction_value_open -= transaction_value
                     transaction_pnl = (transaction_value - eod_mktvalue)
                     p.at[daycount,'pnl'] +=  transaction_pnl
                     transaction_type = ("Sell",transaction_value)
@@ -281,7 +283,10 @@ def compute_transaction_pnl(p: pd.DataFrame,  daycount:int, transactions : pd.Da
                                                                                            transaction_value_open))
             
             if p.at[daycount,'mkt_value_bod'] == 0 and not ticker_transactions.empty:
-                p.at[daycount,'mkt_value_bod'] = transaction_value_open
+                if abs(transaction_value_open) / transaction_value_open_inflow > 0.1:
+                    p.at[daycount,'mkt_value_bod'] = abs(transaction_value_open)
+                else:
+                    p.at[daycount,'mkt_value_bod'] = max([abs(transaction_value_open),transaction_value_open_inflow])
 
 
 def compute_pnl(p: pd.DataFrame, transactions : pd.DataFrame = None) -> None:
@@ -307,12 +312,13 @@ def compute_pnl(p: pd.DataFrame, transactions : pd.DataFrame = None) -> None:
         p.at[daycount,'mkt_value_bod'] = float(p.at[daycount-1,'quantity'])  *  p.at[daycount-1,'Close']
         p.at[daycount,'mkt_value_eod'] = p.loc[daycount-1,'quantity'] * (  p.at[daycount,'Close'] +  p.at[daycount,'Dividends'])
         p.at[daycount,'pnl'] = p.loc[daycount,'mkt_value_eod'] - p.loc[daycount,'mkt_value_bod']
+        compute_transaction_pnl(p,daycount,transactions)
         if (p.loc[daycount,'mkt_value_bod']) != 0:
             p.at[daycount,'r'] = (p.loc[daycount,'pnl'] / p.loc[daycount,'mkt_value_bod']) + 1
         else:
             p.at[daycount,'r'] = 1
 
-        compute_transaction_pnl(p,daycount,transactions)
+        
         daycount += 1
 
     return p
