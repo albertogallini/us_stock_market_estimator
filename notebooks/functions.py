@@ -306,6 +306,8 @@ def compute_pnl(p: pd.DataFrame, transactions : pd.DataFrame = None) -> None:
             p['pnl']           = 0
             p['r']             = 1
             compute_transaction_pnl(p,daycount,transactions)
+            if (p.loc[daycount,'mkt_value_bod']) != 0:
+                p.at[daycount,'r'] = (p.loc[daycount,'pnl'] / p.loc[daycount,'mkt_value_bod']) + 1
             daycount += 1
             continue
         p.at[daycount,'mkt_value']     = float(p.at[daycount,'quantity'])  *  p.at[daycount,'Close']    
@@ -420,16 +422,20 @@ def plot_char(portfolio_performance_daily):
         
                 for i  in range(len(event_types)):
                     spread += abs(spread) + 0.01
+
                     if (event_types[i],event_source[i]) in eventset:
                         continue
+
                     eventset.add((event_types[i],event_source[i]))
+
                     if event_types[i] == 'A':
-                        event_type_lbl +='B(' + str(event_source[i])+ ')\n'
+                        event_type_lbl ='B(' + str(event_source[i])+ ')\n'
+                        event_color = 'green'
+
                     if event_types[i] == 'V':
                         event_type_lbl ='S(' + str(event_source[i]) + ')\n'
                         event_color = 'red'
-
-                    
+                        spread = -spread
 
                     plt.text(event_date,
                             df[df['t']==event_date]['r'].values[0] + spread,

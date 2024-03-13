@@ -1,14 +1,14 @@
 [
     {
-        "stocks": ["IONQ","NVTS"],
+        "stocks": ["CRM"],
         "id": "1"
     },
     {
-        "stocks": ["META"],
+        "stocks": ["NVDA"],
         "id": "2"
     },
     {
-        "stocks": ["WM"],
+        "stocks": ["SMCI"],
         "id": "3"
     }
 ]

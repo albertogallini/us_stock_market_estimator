@@ -216,6 +216,8 @@ class SequentialModel1Stock:
         print(path+PREFIX_MODEL_TRAINING+self.ticker[0]+"__"+scenario_id+".model")
         print(path+PREFIX_MODEL_TRAINING+self.ticker[0]+"__"+scenario_id+".rfactors")
         self.model = tf.keras.models.load_model(path+PREFIX_MODEL_TRAINING+self.ticker[0]+"__"+scenario_id+".model")
+        self.lookback = self.model.input_shape[0][1] # this must pe inherited as the lookback is in funtion of the price volatitly and can change.
+
 
     
     def plot_model(self, file_name:str = 'model.png'):

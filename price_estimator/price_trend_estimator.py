@@ -71,7 +71,7 @@ def load_models_and_compute_estimate(ticker_list : list , input_data_dir: str,  
             sm1s = SequentialModel1StockMultiFactor(input_data_price_csv      = input_data_file[ticker_index],
                                                      input_data_rates_csv     = FOLDER_MARKET_DATA + FILE_NAME_RATES,
                                                      input_fear_and_greed_csv = FOLDER_MARKET_DATA + FILE_NAME_FNG,
-                                                     training_percentage      = 0.98)  
+                                                     training_percentage      = 0.97)  
             
             sm1s.load_model(path=FOLDER_MODEL_STORAGE,scenario_id="")
 
@@ -96,7 +96,6 @@ def main():
     print(os.environ['PYTHONPATH'])
 
     tlist = []
-    18101979
     # Load the data from the JSON file
     with open('tickers_red.json', 'r') as f:
         data = json.load(f)
