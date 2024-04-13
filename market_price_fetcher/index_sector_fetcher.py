@@ -124,7 +124,7 @@ class TestIndexPrice(unittest.TestCase):
         logger.setLevel(logging.DEBUG)
         
         logger.info('Fetching USD index sectors ')
-        isf = IndexSectorFetcher(period = '1d', start='2020-1-1', end='2023-12-13')
+        isf = IndexSectorFetcher(period = '1d', start='2020-1-1', end='2024-3-13')
         isf.fetch()
         
         for ticker in isf.get_tickers():

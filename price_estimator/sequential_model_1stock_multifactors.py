@@ -136,6 +136,7 @@ class SequentialModel1StockMultiFactor(SequentialModel1StockAndRates):
         self.df['inflation'] = (( self.df['inflation'] -  self.df['inflation'].min())   / ( self.df['inflation'].max()  -  self.df['inflation'].min()))  * 1
 
         self.df['Fear Greed'] = (( self.df['Fear Greed'] -  self.df['Fear Greed'].min())   / ( self.df['Fear Greed'].max()  -  self.df['Fear Greed'].min()))  * 1
+        
         self.df['Scores'] = (( self.df['Scores'] -  self.df['Scores'].min())   / ( self.df['Scores'].max()  -  self.df['Scores'].min()))  * 1
 
         

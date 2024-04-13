@@ -214,7 +214,7 @@ def fetch_prices(portfolio: pd.DataFrame, mode:str = 'offline') -> None:
             else:
                 ticker_dates = portfolio[portfolio['ticker'] == ticker]['date'].values
                 start_date = ticker_dates[0]
-                end_date = ticker_dates[len(ticker_dates)-1]
+                end_date =  datetime.today()#ticker_dates[len(ticker_dates)-1]
                 tickerData = yf.Ticker(ticker)
                 if "quoteType" in tickerData.info:
                      print("Quote type : {}".format(tickerData.info["quoteType"]))
@@ -223,13 +223,34 @@ def fetch_prices(portfolio: pd.DataFrame, mode:str = 'offline') -> None:
                 ticker_prices =  tickerData.history(period='1d', start=start_date, end=end_date+timedelta(days=1))
                 ticker_prices.reset_index(inplace=True)
 
-            t_p = ticker_prices[["Date","Close","Dividends"]].rename(columns={'Date':'date'})
+            t_p = ticker_prices[["Date","Close","Dividends"]].rename(columns={'Date':'date'}).sort_values(by='date')
             t_p['date'] = t_p.date.apply(lambda d : pd.to_datetime(d).date())
-            positions = portfolio[portfolio['ticker'] == ticker]
+            positions = portfolio[portfolio['ticker'] == ticker].sort_values(by='date')
+            
+            
+            # fill to today if last quantity is not 0 
+            last_snapshot = positions.iloc[-1]
+            last_price = t_p.iloc[-1]
+            if last_snapshot['date'] < last_price['date'] and  last_snapshot['quantity'] > 0 :
+                date_range = pd.date_range(last_snapshot['date']+timedelta(days=1), last_price['date'])       
+                datetime_range = [ts.to_pydatetime() for ts in date_range]
+
+                for d in datetime_range:
+                    positions.loc[len(positions.index)] = { 'date': d,
+                                                            'ticker': last_snapshot['ticker'],
+                                                            'isin': last_snapshot['isin'],
+                                                            'ccy': last_snapshot['ccy'],
+                                                            'quantity': last_snapshot['quantity']}
+                    
+                positions['date'] = positions['date'].apply(lambda x: x.date() if isinstance(x, pd.Timestamp) else x)
+
+
             portoflio_and_market_data[ticker] = positions.merge(t_p, on='date', how='left')
         except Exception as e:
             print(" Ticker [{}]  -->error in fetching price {}".format(ticker, e))
             continue
+
+    
 
     for pos in portoflio_and_market_data.items():    
         pos[1].to_csv(notebook_constants.DATA_FOLDER+notebook_constants.DAILY_HOLDINGS_PREFIX+pos[0]+".csv")
@@ -294,7 +315,6 @@ def compute_pnl(p: pd.DataFrame, transactions : pd.DataFrame = None) -> None:
     p['Close'].ffill(inplace=True)
     p['quantity'].ffill(inplace=True)
     p['Dividends'].replace(to_replace=np.NaN, value=0., inplace=True)
-
     
     
 
