@@ -8,7 +8,9 @@ class InflationFetcher():
     
     __url5 = "https://fred.stlouisfed.org/graph/fredgraph.csv?bgcolor=%23e1e9f0&chart_type=line&drp=0&fo=open%20sans&graph_bgcolor=%23ffffff&height=450&mode=fred&recession_bars=on&txtcolor=%23444444&ts=12&tts=12&width=1318&nt=0&thu=0&trc=0&show_legend=yes&show_axis_titles=yes&show_tooltip=yes&id=T5YIE&scale=left&cosd=2020-01-01&coed=YYYYMMDD&line_color=%234572a7&link_values=false&line_style=solid&mark_type=none&mw=3&lw=2&ost=-99999&oet=99999&mma=0&fml=a&fq=Daily&fam=avg&fgst=lin&fgsnd=2020-01-01&line_index=1&transformation=lin&vintage_date=YYYYMMDD&revision_date=YYYYMMDD&nd=2020-01-01"
     
-    __urlcpi ="https://fred.stlouisfed.org/graph/fredgraph.csv?bgcolor=%23e1e9f0&chart_type=line&drp=0&fo=open%20sans&graph_bgcolor=%23ffffff&height=450&mode=fred&recession_bars=on&txtcolor=%23444444&ts=12&tts=12&width=1318&nt=0&thu=0&trc=0&show_legend=yes&show_axis_titles=yes&show_tooltip=yes&id=CORESTICKM159SFRBATL&scale=left&cosd=2020-01-01&coed=YYYYMMDD&line_color=%234572a7&link_values=false&line_style=solid&mark_type=none&mw=3&lw=2&ost=-99999&oet=99999&mma=0&fml=a&fq=Monthly&fam=avg&fgst=lin&fgsnd=2020-02-01&line_index=1&transformation=lin&vintage_date=YYYYMMDD&revision_date=YYYYMMDD&nd=2020-01-01"
+    __urlcpinofoodenergy = "https://fred.stlouisfed.org/graph/fredgraph.csv?bgcolor=%23e1e9f0&chart_type=line&drp=0&fo=open%20sans&graph_bgcolor=%23ffffff&height=450&mode=fred&recession_bars=on&txtcolor=%23444444&ts=12&tts=12&width=1318&nt=0&thu=0&trc=0&show_legend=yes&show_axis_titles=yes&show_tooltip=yes&id=CORESTICKM159SFRBATL&scale=left&cosd=2020-01-01&coed=YYYYMMDD&line_color=%234572a7&link_values=false&line_style=solid&mark_type=none&mw=3&lw=2&ost=-99999&oet=99999&mma=0&fml=a&fq=Monthly&fam=avg&fgst=lin&fgsnd=2020-02-01&line_index=1&transformation=lin&vintage_date=YYYYMMDD&revision_date=YYYYMMDD&nd=2020-01-01"
+
+    _urlcpiallitems      = "https://fred.stlouisfed.org/graph/fredgraph.csv?bgcolor=%23e1e9f0&chart_type=line&drp=0&fo=open%20sans&graph_bgcolor=%23ffffff&height=450&mode=fred&recession_bars=on&txtcolor=%23444444&ts=12&tts=12&width=1318&nt=0&thu=0&trc=0&show_legend=yes&show_axis_titles=yes&show_tooltip=yes&id=CPALTT01USM657N&scale=left&cosd=2020-01-01&coed=YYYYMMDD&line_color=%234572a7&link_values=false&line_style=solid&mark_type=none&mw=3&lw=2&ost=-99999&oet=99999&mma=0&fml=a&fq=Monthly&fam=avg&fgst=lin&fgsnd=2020-02-01&line_index=1&transformation=lin&vintage_date=YYYYMMDD&revision_date=YYYYMMDD&nd=2020-01-01"
     
     def __init__(self, datestr: str = None, url: str = 'cpi'):
        import numpy as np
@@ -24,9 +26,12 @@ class InflationFetcher():
        if url == '5Y' :
             self.__url = self.__url5
             field = 'T5YIE'
-       if url == 'cpi' :
-            self.__url = self.__urlcpi
+       if url == 'cpinofoodenergy' :
+            self.__url = self.__urlcpinofoodenergy
             field = 'CORESTICKM159SFRBATL'
+       if url == 'cpi' :
+            self.__url = self._urlcpiallitems
+            field = 'CPALTT01USM657N'
             
        if datestr ==None:
             from datetime import date 

@@ -82,8 +82,8 @@ if __name__ == '__main__':
         fngdf.to_csv(FOLDER_MARKET_DATA + FILE_NAME_FNG)
         logger.debug(fngdf)
 
-        logger.info('Fetching USD 10Y Inflation ')
-        print('Fetching USD 10Y Inflation ')  
+        logger.info('Fetching Inflation')
+        print('Fetching Inflation')  
         irf = InflationFetcher()
         infl10y_rates = irf.get_inflation()
         infl10y_rates.to_csv(FOLDER_MARKET_DATA + FILE_NAME_INFLATION)
