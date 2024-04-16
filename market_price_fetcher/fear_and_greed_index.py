@@ -71,7 +71,7 @@ class TestFearAndGreedIndex(unittest.TestCase):
         logger.setLevel(logging.DEBUG)
         
         logger.info('Fetching USD index sectors ')
-        fngi = FearAndGreedIndex(start='2020-09-30', end='2023-12-13')
+        fngi = FearAndGreedIndex(start='2020-09-30', end='2024-05-01')
         df = fngi.fetch()
         df.to_csv(FOLDER_MARKET_DATA + FILE_NAME_FNG)
         print(df)

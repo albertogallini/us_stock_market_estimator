@@ -64,25 +64,23 @@ def get_news_text_selenium(url):
 
     htmlp = browser.page_source
     soup = BeautifulSoup(htmlp, "html.parser")
-        
-    story_items = soup.find('div', class_='WYSIWYG articlePage')
-    if(story_items != None):
-        story_items = filter(lambda x: x.name == 'p', story_items)
-        readable_text = ""
-        for item in story_items:
-            readable_text += re.sub("<[^>]*>", "",(item.get_text(separator='\n', strip=True)))
 
-        return readable_text
+    story_items_divs = []
+    for div in soup.find_all('div'):
+        classes = div.get('class', [])
+        if any('WYSIWYG' in class_name for class_name in classes):  # Check if any class contains 'WYSIWYG'
+            story_items_divs.append(div) 
+
+    readable_text = ""
+    for story_items in story_items_divs:
+        if(story_items != None):
+            story_items = filter(lambda x: x.name == 'p', story_items)
+            readable_text = ""
+            for item in story_items:
+                readable_text += re.sub("<[^>]*>", "",(item.get_text(separator='\n', strip=True)))
+
+    return readable_text
     pass
-
-from datetime import datetime
-def get_YYYY_MM_DD_idc(date_string:str) -> datetime :
-    date_object = datetime.strptime(date_string, "%b %d, %Y %H:%M %Z")
-    print(date_object)
-    try:        
-        return date_object.strftime("%Y-%m-%d")
-    except ValueError:
-        raise ValueError("Invalid date format")
 
  
 import unittest

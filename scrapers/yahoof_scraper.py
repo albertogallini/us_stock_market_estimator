@@ -65,16 +65,6 @@ def generate_data_set_csv(item_list):
             a_row = row + ('neutral',)
             writer.writerow(a_row)    
 
-
-from datetime import datetime
-def get_YYYY_MM_DD_yh(date_string:str) -> datetime :
-    date_object = datetime.strptime(date_string, '%Y-%m-%dT%H:%M:%SZ')
-    print(date_object)
-    try:        
-        return date_object.strftime("%Y-%m-%d")
-    except ValueError:
-        raise ValueError("Invalid date format")
-    
  
 import unittest
 import logging  

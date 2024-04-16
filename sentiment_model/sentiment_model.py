@@ -168,10 +168,28 @@ def save_to_csv(data):
     # copy the updated file to the data folder as well. 
     dfcopy.to_csv(FOLDER_MARKET_DATA+NEWS_DATA_FILE_NAME_CSV)
 
-def save_news_text(news_text:str, sm: SentimentModel) -> float: 
+
+from datetime import datetime
+def get_YYYY_MM_DD(date_string:str, prs_str:str) -> datetime :
+    date_object = datetime.strptime(date_string, prs_str)
+    print(date_object)
+    try:        
+        return date_object.strftime("%Y-%m-%d")
+    except ValueError:
+        raise ValueError("Invalid date format")
+
+
+def save_news_textyh(news_text:str, sm: SentimentModel) -> float: 
     news_text.replace("|","-")
     score = sm.get_sentiment_score(news_text)
-    ns = f"src:Investing.com|news:{n[0]:s}|Date:{get_YYYY_MM_DD_idc(n[2]):s}|Scores:{score:.6f}|news_text:{news_text:s}"
+    ns = f"src:Investing.com|news:{n[0]:s}|Date:{get_YYYY_MM_DD(n[2],'%Y-%m-%dT%H:%M:%SZ'):s}|Scores:{score:.6f}|news_text:{news_text:s}"
+    save_to_csv(ns)
+    return score
+
+def save_news_textidc(news_text:str, sm: SentimentModel) -> float: 
+    news_text.replace("|","-")
+    score = sm.get_sentiment_score(news_text)
+    ns = f"src:Investing.com|news:{n[0]:s}|Date:{get_YYYY_MM_DD(n[2],'%b %d, %Y %H:%M %Z'):s}|Scores:{score:.6f}|news_text:{news_text:s}"
     save_to_csv(ns)
     return score
 
@@ -181,7 +199,7 @@ import unittest
 import logging  
 import pandas as pd
 from scrapers.yahoof_scraper    import get_yahoo_finance_news_rss,get_news_text
-from scrapers.investing_dot_com import get_investing_dot_com_news_rss, get_news_text_selenium, get_YYYY_MM_DD_idc
+from scrapers.investing_dot_com import get_investing_dot_com_news_rss, get_news_text_selenium
    
 class TestSentimentModel(unittest.TestCase):
     
@@ -202,7 +220,7 @@ class TestSentimentModel(unittest.TestCase):
             news_text = get_news_text(n[1])
             if(news_text is not None):
                 try:
-                    score = save_news_text(news_text,sm)
+                    score = save_news_textyh(news_text,sm)
                     acc_score += score
                     counter += 1
                     self.assertGreater(score,0) 
@@ -220,7 +238,7 @@ class TestSentimentModel(unittest.TestCase):
             news_text = get_news_text_selenium(n[1])
             if(news_text is not None):
                 try:
-                    score = save_news_text(news_text,sm)
+                    score = save_news_textidc(news_text,sm)
                     acc_score += score
                     counter += 1
                     self.assertGreater(score,0) 
@@ -257,7 +275,7 @@ if __name__ == "__main__":
             news_text = get_news_text(n[1])
             if(news_text is not None):
                 try:
-                    score = save_news_text(news_text,sm)
+                    score = save_news_textyh(news_text,sm)
                     acc_score += score
                     counter += 1
                 except:
@@ -270,12 +288,13 @@ if __name__ == "__main__":
             news_text = get_news_text_selenium(n[1])
             if(news_text is not None):
                 try:
-                    score = save_news_text(news_text,sm)
+                    score = save_news_textidc(news_text,sm)
                     acc_score += score
                     counter += 1
                 except:
                     continue
 
+        
         print("Accumulated score {:.5f}".format((acc_score/counter)))
        
         #import os
