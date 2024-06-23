@@ -209,6 +209,7 @@ def fetch_prices(portfolio: pd.DataFrame, mode:str = 'offline') -> None:
     for ticker in portfolio['ticker'].unique():
         try:
             print("Fetiching {}".format(ticker))
+
             if mode == "offline":
                 ticker_prices = pd.read_csv(const_and_utils.FOLDER_MARKET_DATA+const_and_utils.PREFIX_PRICE_FETCHER+ticker+".csv")
             else:
@@ -220,10 +221,17 @@ def fetch_prices(portfolio: pd.DataFrame, mode:str = 'offline') -> None:
                      print("Quote type : {}".format(tickerData.info["quoteType"]))
                 if tickerData.info["quoteType"] != 'EQUITY':
                     continue
-                ticker_prices =  tickerData.history(period='1d', start=start_date, end=end_date+timedelta(days=1))
+                ticker_prices =  tickerData.history(period='1d', start=start_date, end=end_date+timedelta(days=1), auto_adjust=False)
                 ticker_prices.reset_index(inplace=True)
 
-            t_p = ticker_prices[["Date","Close","Dividends"]].rename(columns={'Date':'date'}).sort_values(by='date')
+            #split adjustment
+            ticker_prices['Stock Splits'] = ticker_prices['Stock Splits'].replace({0: 1})
+            ticker_prices['Stock Splits'] = ticker_prices['Stock Splits'][::-1].cumprod()[::-1]
+            last_value = ticker_prices['Close'].iloc[-1].copy()
+            ticker_prices['Close'] = ticker_prices['Close'] * ticker_prices['Stock Splits'].shift(-1)
+            ticker_prices['Close'].iloc[-1] = last_value
+
+            t_p = ticker_prices[["Date","Close","Dividends","Stock Splits"]].rename(columns={'Date':'date'}).sort_values(by='date')
             t_p['date'] = t_p.date.apply(lambda d : pd.to_datetime(d).date())
             positions = portfolio[portfolio['ticker'] == ticker].sort_values(by='date')
             
@@ -279,6 +287,9 @@ def compute_transaction_pnl(p: pd.DataFrame,  daycount:int, transactions : pd.Da
             holds_pnl = p.at[daycount,'pnl']
             for _,t in ticker_transactions.iterrows():
 
+                if t[notebook_constants.TRANSACTION_FIELD_PRICE] == 0:
+                    continue
+                
                 transaction_value  = (t[notebook_constants.TRANSACTION_FIELD_QUANTITIY] * t[notebook_constants.TRANSACTION_FIELD_PRICE])
                 eod_mktvalue       = (t[notebook_constants.TRANSACTION_FIELD_QUANTITIY] * p.at[daycount,'Close'] )
                 transaction_pnl    = 0
@@ -315,6 +326,10 @@ def compute_pnl(p: pd.DataFrame, transactions : pd.DataFrame = None) -> None:
     p['Close'].ffill(inplace=True)
     p['quantity'].ffill(inplace=True)
     p['Dividends'].replace(to_replace=np.NaN, value=0., inplace=True)
+    has_split = False
+    if 'Stock Splits' in p.columns:
+        has_split = True
+        p['Stock Splits'].ffill(inplace=True)
     
     
 
@@ -330,9 +345,24 @@ def compute_pnl(p: pd.DataFrame, transactions : pd.DataFrame = None) -> None:
                 p.at[daycount,'r'] = (p.loc[daycount,'pnl'] / p.loc[daycount,'mkt_value_bod']) + 1
             daycount += 1
             continue
-        p.at[daycount,'mkt_value']     = float(p.at[daycount,'quantity'])  *  p.at[daycount,'Close']    
-        p.at[daycount,'mkt_value_bod'] = float(p.at[daycount-1,'quantity'])  *  p.at[daycount-1,'Close']
-        p.at[daycount,'mkt_value_eod'] = p.loc[daycount-1,'quantity'] * (  p.at[daycount,'Close'] +  p.at[daycount,'Dividends'])
+
+        split_offset =  2 if datetime.strptime(p.at[daycount,'date'], "%Y-%m-%d").weekday() == 4 else 0 # Friday
+        if split_offset == 0 :
+            split_offset =  1 if datetime.strptime(p.at[daycount,'date'], "%Y-%m-%d").weekday() == 5 else 0 # Saturday
+        
+        split_offset_weekend = 2 + split_offset
+        split_adj_factor_eod = 1
+        if daycount + split_offset_weekend < len(p) and has_split:
+            split_adj_factor_eod =  p.at[daycount+split_offset_weekend-1,'Stock Splits'] / p.at[daycount+split_offset_weekend,'Stock Splits']    
+
+        split_adj_factor_bod = split_adj_factor_eod 
+        if daycount + 1 < len(p) and has_split:
+            if p.at[daycount+1,'Stock Splits'] != p.at[daycount,'Stock Splits'] :
+                split_adj_factor_bod =  p.at[daycount,'Stock Splits']/p.at[daycount+1,'Stock Splits']
+
+        p.at[daycount,'mkt_value']     = float(p.at[daycount,'quantity']) / split_adj_factor_eod *  p.at[daycount,'Close']    
+        p.at[daycount,'mkt_value_bod'] = float(p.at[daycount-1,'quantity']) / split_adj_factor_bod  *  p.at[daycount-1,'Close']
+        p.at[daycount,'mkt_value_eod'] = float(p.at[daycount-1,'quantity']) / split_adj_factor_eod  *  (p.at[daycount,'Close'] +  p.at[daycount,'Dividends'])
         p.at[daycount,'pnl'] = p.loc[daycount,'mkt_value_eod'] - p.loc[daycount,'mkt_value_bod']
         compute_transaction_pnl(p,daycount,transactions)
         if (p.loc[daycount,'mkt_value_bod']) != 0:
@@ -478,3 +508,5 @@ def plot_char(portfolio_performance_daily):
 
 
 
+
+# %%
