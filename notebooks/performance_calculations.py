@@ -12,7 +12,8 @@ functions.unroll_daily_holdings()
 #%%
 
 portfolio = pd.read_csv(notebook_constants.DATA_FOLDER + notebook_constants.PORTFOLIO_HOLDINGS_DAILY)
-functions.fetch_prices(portfolio)
+portfolio = portfolio[portfolio.ticker == "PFE"]
+functions.fetch_prices(portfolio, mode="online")
 
 
 #%%

@@ -7,9 +7,9 @@ import pandas as pd
 from openfigipy import OpenFigiClient
 
 
-def get_ticker(isin):
+def get_ticker(isin, sleep_time = 1):
     try:
-        time.sleep(1)
+        time.sleep(sleep_time)
         ofc = OpenFigiClient()
         ofc.connect()  # Establish a requests session
 
@@ -209,19 +209,20 @@ def fetch_prices(portfolio: pd.DataFrame, mode:str = 'offline') -> None:
     for ticker in portfolio['ticker'].unique():
         try:
             print("Fetiching {}".format(ticker))
-
+            ticker_prices = pd.DataFrame()
+            
             if mode == "offline":
                 ticker_prices = pd.read_csv(const_and_utils.FOLDER_MARKET_DATA+const_and_utils.PREFIX_PRICE_FETCHER+ticker+".csv")
             else:
                 ticker_dates = portfolio[portfolio['ticker'] == ticker]['date'].values
                 start_date = ticker_dates[0]
-                end_date =  datetime.today()#ticker_dates[len(ticker_dates)-1]
+                end_date =  (datetime.today()+timedelta(days=1) ).date() 
                 tickerData = yf.Ticker(ticker)
                 if "quoteType" in tickerData.info:
                      print("Quote type : {}".format(tickerData.info["quoteType"]))
                 if tickerData.info["quoteType"] != 'EQUITY':
                     continue
-                ticker_prices =  tickerData.history(period='1d', start=start_date, end=end_date+timedelta(days=1), auto_adjust=False)
+                ticker_prices =  tickerData.history(period='1d', start=start_date, end=end_date, auto_adjust=False)
                 ticker_prices.reset_index(inplace=True)
 
             #split adjustment
@@ -240,20 +241,22 @@ def fetch_prices(portfolio: pd.DataFrame, mode:str = 'offline') -> None:
             last_snapshot = positions.iloc[-1]
             last_price = t_p.iloc[-1]
             if last_snapshot['date'] < last_price['date'] and  last_snapshot['quantity'] > 0 :
-                date_range = pd.date_range(last_snapshot['date']+timedelta(days=1), last_price['date'])       
-                datetime_range = [ts.to_pydatetime() for ts in date_range]
+                date_range = pd.date_range(last_snapshot['date'] + timedelta(days=1), last_price['date'])       
+                datetime_range = [ts.to_pydatetime().date() for ts in date_range]
 
+                fillfwd = pd.DataFrame(columns=['date','ticker','isin','ccy','quantity'])
                 for d in datetime_range:
-                    positions.loc[len(positions.index)] = { 'date': d,
-                                                            'ticker': last_snapshot['ticker'],
-                                                            'isin': last_snapshot['isin'],
-                                                            'ccy': last_snapshot['ccy'],
-                                                            'quantity': last_snapshot['quantity']}
-                    
-                positions['date'] = positions['date'].apply(lambda x: x.date() if isinstance(x, pd.Timestamp) else x)
-
-
-            portoflio_and_market_data[ticker] = positions.merge(t_p, on='date', how='left')
+                    t = {'date': d,
+                         'ticker': last_snapshot['ticker'],
+                         'isin': last_snapshot['isin'],
+                         'ccy': last_snapshot['ccy'],
+                         'quantity': last_snapshot['quantity'] }  
+                    #print(t)                  
+                    fillfwd.loc[len(fillfwd)] = t
+                positions = pd.concat([positions, fillfwd], ignore_index=True)
+        
+            positions['date'] = positions['date'].apply(lambda x: x.date() if isinstance(x, pd.Timestamp) else x)
+            portoflio_and_market_data[ticker] = positions[['date','ticker','isin','ccy','quantity']].merge(t_p, on='date', how='left')
         except Exception as e:
             print(" Ticker [{}]  -->error in fetching price {}".format(ticker, e))
             continue
@@ -273,7 +276,7 @@ import numpy as np
 def compute_transaction_pnl(p: pd.DataFrame,  daycount:int, transactions : pd.DataFrame = None,) -> None:
      if transactions is not None :
             
-            holdings_date       = datetime.strptime(p.at[daycount,'date'], "%Y-%m-%d").date()
+            holdings_date       = datetime.strptime(p.at[daycount,'date'].split(" ")[0], "%Y-%m-%d").date()
             monthstr = str(holdings_date.month)
             if len(monthstr) == 1 :
                 monthstr = '0'+ monthstr
@@ -298,21 +301,26 @@ def compute_transaction_pnl(p: pd.DataFrame,  daycount:int, transactions : pd.Da
                     transaction_value_open_inflow +=  transaction_value
                     transaction_pnl = (eod_mktvalue  -  transaction_value)
                     p.at[daycount,'pnl'] += transaction_pnl
+                    p.at[daycount,'transaction_pnl']  += transaction_pnl
                     transaction_type = ("Buy",transaction_value)
                 if (t[notebook_constants.TRANSACTION_FIELD_BUY_SELL] == 'V'):
                     transaction_value_open -= transaction_value
                     transaction_pnl = (transaction_value - eod_mktvalue)
                     p.at[daycount,'pnl'] +=  transaction_pnl
+                    p.at[daycount,'transaction_pnl']  += transaction_pnl
                     transaction_type = ("Sell",transaction_value)
 
                 ticker = ticker_transactions[notebook_constants.TRANSACTION_FIELD_TICKER].values[0]
-                print("{} {} {} -> transcation pnl: {}  hold pnl {}  mvbod {}  trbasis {}".format(ticker,
+                print("{} {} {} -> transcation pnl: {}  hold pnl {}  mvbod {}  trbasis {}, quantity {}, close price {}, trans. price {}".format(ticker,
                                                                                            holdings_datestr,
                                                                                            transaction_type,
                                                                                            transaction_pnl,
                                                                                            holds_pnl,
                                                                                            p.at[daycount,'mkt_value_bod'],
-                                                                                           transaction_value_open))
+                                                                                           transaction_value_open,
+                                                                                           t[notebook_constants.TRANSACTION_FIELD_QUANTITIY],
+                                                                                           p.at[daycount,'Close'],
+                                                                                           t[notebook_constants.TRANSACTION_FIELD_PRICE]))
             
             if p.at[daycount,'mkt_value_bod'] == 0 and not ticker_transactions.empty:
                 if abs(transaction_value_open) / transaction_value_open_inflow > 0.1:
@@ -339,6 +347,8 @@ def compute_pnl(p: pd.DataFrame, transactions : pd.DataFrame = None) -> None:
             p['mkt_value_bod'] = 0
             p['mkt_value_eod'] = 0
             p['pnl']           = 0
+            p['income_pnl']    = 0
+            p['transaction_pnl'] = 0
             p['r']             = 1
             compute_transaction_pnl(p,daycount,transactions)
             if (p.loc[daycount,'mkt_value_bod']) != 0:
@@ -346,9 +356,11 @@ def compute_pnl(p: pd.DataFrame, transactions : pd.DataFrame = None) -> None:
             daycount += 1
             continue
 
-        split_offset =  2 if datetime.strptime(p.at[daycount,'date'], "%Y-%m-%d").weekday() == 4 else 0 # Friday
+        datestr = p.at[daycount,'date'].split(" ")[0]
+
+        split_offset =  2 if datetime.strptime(datestr, "%Y-%m-%d").weekday() == 4 else 0 # Friday
         if split_offset == 0 :
-            split_offset =  1 if datetime.strptime(p.at[daycount,'date'], "%Y-%m-%d").weekday() == 5 else 0 # Saturday
+            split_offset =  1 if datetime.strptime(datestr, "%Y-%m-%d").weekday() == 5 else 0 # Saturday
         
         split_offset_weekend = 2 + split_offset
         split_adj_factor_eod = 1
@@ -364,6 +376,7 @@ def compute_pnl(p: pd.DataFrame, transactions : pd.DataFrame = None) -> None:
         p.at[daycount,'mkt_value_bod'] = float(p.at[daycount-1,'quantity']) / split_adj_factor_bod  *  p.at[daycount-1,'Close']
         p.at[daycount,'mkt_value_eod'] = float(p.at[daycount-1,'quantity']) / split_adj_factor_eod  *  (p.at[daycount,'Close'] +  p.at[daycount,'Dividends'])
         p.at[daycount,'pnl'] = p.loc[daycount,'mkt_value_eod'] - p.loc[daycount,'mkt_value_bod']
+        p.at[daycount,'income_pnl']    = float(p.at[daycount-1,'quantity']) / split_adj_factor_eod  * p.at[daycount,'Dividends']
         compute_transaction_pnl(p,daycount,transactions)
         if (p.loc[daycount,'mkt_value_bod']) != 0:
             p.at[daycount,'r'] = (p.loc[daycount,'pnl'] / p.loc[daycount,'mkt_value_bod']) + 1
@@ -383,7 +396,7 @@ def plot_char(portfolio_performance_daily):
 
     sc = 0
     portfolio_series = dict()
-    metrics = ['pnl', 'mkt_value', 'mkt_value_bod', 'mkt_value_eod', 'r']
+    metrics = ['transaction_pnl','income_pnl','pnl', 'mkt_value', 'mkt_value_bod', 'mkt_value_eod', 'r']
     portfolio_series['t'] = list()
     for m in metrics:
         portfolio_series[m] = list()
@@ -392,7 +405,7 @@ def plot_char(portfolio_performance_daily):
             
             s = snapshot[snapshot[m].apply(lambda x : (x is not None))]
             s = s[pd.notna(s[m])]
-            d = datetime.strptime(day[0], "%Y-%m-%d").date()
+            d = datetime.strptime(day[0].split(" ")[0], "%Y-%m-%d").date()
             if not s.empty:
                 if m == 'r':
                     portfolio_series['t'].append(d)
